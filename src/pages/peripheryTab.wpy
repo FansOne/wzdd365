@@ -1,0 +1,217 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import indexGoods from '../components/indexGoods';
+let navbar = ['全部'];
+
+export default class peripheryTab extends wepy.page {
+    config = {
+        navigationBarTitleText: '周边',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+        enablePullDownRefresh:true,
+        backgroundTextStyle:'dark',
+    };
+    components = {
+        indexGoods:indexGoods
+    };
+    data = {
+        navbar: [],
+        currentTab: 0,
+        imgUrls: [],
+        indexGoods:[],
+        stars: [0, 1, 2, 3, 4],
+        pageShow:false,
+        scrollLeft:0,
+        page:1,
+        selectCity:'',
+        city:''
+    };
+    methods = {
+        navbarTap(e){
+            this.currentTab = e.currentTarget.dataset.idx
+            if(this.currentTab == 4 && this.scrollLeft == 0){
+                this.scrollLeft = 230
+            }else if (this.currentTab>4){
+                this.scrollLeft = 230+(this.currentTab*20)
+            }else if (this.currentTab<4){
+                this.scrollLeft = 0
+            }else{
+                this.scrollLeft = 0
+            }
+        },
+        navigate_to(path){
+            let navigatePath = path.indexOf('https');
+            if(navigatePath == -1){
+                wx.navigateTo({
+                    url: path
+                })
+            }else{
+                wx.navigateTo({
+                    url: '../activityIndex/activitys/webView?src='+path
+                })
+            }
+        }
+    };
+
+    events = {};
+    onShow() {};
+    onLoad(){
+        this.ad()
+        this.industry()
+        wx.getStorage({
+            key: 'selectCity',
+            success: res => {
+                this.selectCity = 'alreadySelect'
+                this.city = res.data
+                this.$apply()
+                this.merchantCity()
+            },
+            fail: ()=>{
+                this.merchantGeo()
+            }
+        });
+    }
+    //下拉刷新
+    onPullDownRefresh(){
+        this.pageShow = true
+        this.$apply()
+        this.ad()
+        this.industry()
+        if(!this.selectCity){
+              this.merchantGeo()
+          }else{
+              this.merchantCity()
+          }
+    }
+    watch = {
+      currentTab (newValue, oldValue) {
+          if(!this.selectCity){
+              this.merchantGeo(newValue)
+          }else{
+              this.merchantCity(newValue)
+          }
+      }
+  }
+    //获取行业列表
+    industry(){
+        wepy.request({
+            url: api.apiMall + '/industry',
+            method: 'GET',
+            data: {
+                type:0
+            }
+        }).then(res=>{
+            // console.log(res.data.data)
+            res.data.data.forEach(element => {
+                navbar.push(element.title)
+            });
+            this.navbar = navbar
+            this.$apply()
+            // console.log(navbar)
+        });
+    }
+    //获取商户信息
+    async merchantGeo(e){
+        wx.getStorage({
+            key: 'localWhere',
+            success: res => {
+                wepy.request({
+                    url: api.apiMall + '/shop/geo',
+                    method: 'GET',
+                    data:{
+                        industry_id: e || 0,
+                        lng: res.data.lng,
+                        lat: res.data.lat,
+                        sort:0,
+                        page: this.page
+                    }
+                }).then((res)=>{
+                    wx.stopPullDownRefresh()
+                    res.data.data.rows.forEach(element => {
+                        element.minimum_charge = Number(element.minimum_charge).toFixed(2)
+                        element.indexGoods = true
+                    });
+                    this.pageShow = false
+                    this.indexGoods = res.data.data
+                    this.$apply()
+                })
+            }
+        });
+    }
+    //获取商户信息-已选择城市
+    merchantCity(newValue){
+        wx.getStorage({
+            key: 'localWhere',
+            success: res => {
+                wepy.request({
+                    url: api.apiMall + '/shop/city',
+                    method: 'GET',
+                    data:{
+                        industry_id: newValue || 0,
+                        lng: res.data.lng,
+                        lat: res.data.lat,
+                        city: this.city,
+                        sort:0,
+                        page: this.page
+                    }
+                }).then((res)=>{
+                    wx.stopPullDownRefresh()
+                    res.data.data.rows.forEach(element => {
+                        element.indexGoods = true
+                    });
+                    this.pageShow = false
+                    this.indexGoods = res.data.data
+                    this.$apply()
+                })
+            }
+        });
+    }
+    //根据频道获取广告轮播
+    async ad(){
+        const url = api.apiMall + '/ad';
+        const data = {
+            channel_id: 2,
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data: data,
+        }).then((res)=>{
+            wx.stopPullDownRefresh()
+            this.pageShow = false
+            this.imgUrls = res.data.data
+            this.$apply()
+            // console.log(res.data.data)
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container' hidden='{{pageShow}}'>
+        <swiper indicator-dots autoplay interval="4000" circular>
+            <block wx:for="{{imgUrls}}" wx:key=''>
+                <swiper-item>
+                <image src="{{item.pic_url}}" class="slide-image" @tap='navigate_to({{item.path}})'/>
+                </swiper-item>
+            </block>
+        </swiper>
+        <!--Tab菜单-->
+        <scroll-view scroll-x class="navbar scrollNav" scroll-left="{{scrollLeft}}" scroll-with-animation>
+            <!--循环-->
+            <view wx:for="{{navbar}}" data-idx="{{index}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap">
+                <view class="notice" wx:if="{{count[index]>0}}">{{count[index]}}</view>
+                {{item}}
+            </view>
+        </scroll-view>
+        <!-- 分类 -->
+        <indexGoods :syncTitle.sync="indexGoods" :syncStar.sync="stars"/>
+        <view wx:if='{{indexGoods.length == 0}}' class='nodata'>
+            <image src='https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/nodata.png'/>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+</style>

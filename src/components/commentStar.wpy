@@ -1,0 +1,72 @@
+<style lang="less">
+  .startBox{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    .center{
+      position: relative;
+      margin-top: 30rpx;
+      width: 275rpx;
+    }
+  }
+  .star-image{
+    position: absolute;
+    top: 0rpx;
+    width: 50rpx;
+    height: 50rpx;
+    src: "https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F.png";
+  }
+  .item{
+    position: absolute;
+    top: 0rpx;
+    width: 25rpx;
+    height: 50rpx;
+  }
+</style>
+<template>
+  <view class = 'startBox'>
+    <view class='center'>
+        <block wx:for="{{stars}}" wx:key='idx'>
+          <image class="star-image" style="left: {{item*55}}rpx;" src="{{key > item ?selectedSrc : normalSrc}}">
+            <view class="item" style="left:0rpx" data-key="{{item+1}}" @tap="selectLeft"></view>
+            <view class="item" style="left:25rpx" data-key="{{item+1}}" @tap="selectRight"></view>
+          </image>
+        </block>
+    </view>
+  </view>
+</template>
+<script>
+  var count = 0;
+  import wepy from 'wepy'
+  export default class New extends wepy.page {
+  	data = {
+  		stars: [0, 1, 2, 3, 4],
+  		normalSrc: 'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F.png',
+    	selectedSrc: 'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F1.png',
+    	key: 0, //评分
+  	}
+    components = {}
+    methods = {
+    	 //点击左边,半颗星
+  		selectLeft (e) {
+		    var key = e.currentTarget.dataset.key
+		    if (this.key == 1 && e.currentTarget.dataset.key ==1) {
+			    	//只有一颗星的时候,再次点击,变为0颗
+			    key = 0;
+		    }
+		    count = key
+		    this.key = key
+		    this.$apply()
+        wepy.$instance.globalData.score = Math.round(this.key)
+		},
+		//点击右边,整颗星
+		selectRight (e) {
+		    var key = e.currentTarget.dataset.key
+		    count = key
+		    this.key = key
+		    this.$apply()
+        wepy.$instance.globalData.score = this.key
+		},
+    }
+  }
+</script>

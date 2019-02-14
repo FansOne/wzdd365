@@ -1,0 +1,428 @@
+<script>
+import wepy from 'wepy';
+import { orderCash,WXPay,cashCoupons } from '../api/request';
+import digit from '../components/digit';
+import token from '../api/getToken'
+import {noConcurrent} from 'fancy-mini/lib/decorators';
+export default class payMent extends wepy.page {
+    config = {
+        navigationBarTitleText: '',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#f44919',
+    };
+    components = {
+        digit
+    }
+
+    data = {
+        inputValue: '',
+        //顶部金额提醒
+        topPrompt:true,
+        shop_id:'',
+        //门店Url传回数据
+        options:{},
+        open_id:'',
+        coupons:[],
+        //卡券ID
+        coupon_id:0,
+        couponItem:{}
+    };
+    methods = {
+        @noConcurrent
+        async confirmPayMent(e){
+            let iv = e.detail.iv;
+            let encryptedData = e.detail.encryptedData;
+            let pay_type = e.currentTarget.dataset.paytype
+            wx.getStorage({
+                key: 'openId&token',
+                success: res => {
+                    let open_id = res.data.open_id;
+                    orderCash(this.shop_id,res.data.open_id,this.inputValue*100,res.data.token,Number(pay_type),this.coupon_id).then((res)=>{
+                        let order_id = res.data.data.order_id;
+                        let orderId_WXPay = res.data.data  // 订单ID、是否需要微信支付
+                        if(!Number(pay_type)){      // 选择支付方式（钱包支付）
+                            wx.showModal({
+                                title: '支付提示',
+                                content: '是否使用钱包支付￥'+this.inputValue,
+                                success:(res)=>{
+                                    if(res.confirm){
+                                        wx.showLoading({
+                                            title: '发起支付...',
+                                            mask: true,    
+                                        });
+                                        if(!orderId_WXPay.needWxPay){   //钱包充足，不需发起微信支付
+                                            wx.redirectTo({
+                                                url: './payMentSuccess?payTotal='+this.inputValue+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+pay_type+'&order_id='+orderId_WXPay.order_id+'&open_id='+open_id
+                                            });
+                                        }else{      //钱包余额不足，发起微信支付
+                                            WXPay(open_id,orderId_WXPay.order_id).then((result)=>{
+                                            let str = result.data.data.jsskd.timestamp.toString()
+                                            wx.hideLoading();
+                                                wx.requestPayment({
+                                                    'timeStamp': str,
+                                                    'nonceStr':result.data.data.jsskd.nonceStr,
+                                                    'package': result.data.data.jsskd.package,
+                                                    'signType': result.data.data.jsskd.signType,
+                                                    'paySign': result.data.data.jsskd.paySign,
+                                                    success:(res)=>{
+                                                        wx.redirectTo({
+                                                            url: './payMentSuccess?payTotal='+this.inputValue+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+pay_type+'&order_id='+orderId_WXPay.order_id+'&open_id='+open_id
+                                                        });
+                                                    },
+                                                    fail:(res)=>{
+                                                        wx.showToast({
+                                                            title: '已取消支付',
+                                                            icon: 'none',
+                                                            duration: 1500,
+                                                            mask: false,
+                                                        });
+                                                    }
+                                                })
+                                            })
+                                        }
+                                    }
+                                }
+                            })
+                        }else{      //选择支付方式（微信支付）
+                            wx.showLoading({
+                                title: '发起支付...',
+                                mask: true,    
+                            });
+                            WXPay(open_id,order_id).then((result)=>{
+                                let str = result.data.data.jsskd.timestamp.toString()
+                                wx.hideLoading();
+                                wx.requestPayment({
+                                    'timeStamp': str,
+                                    'nonceStr':result.data.data.jsskd.nonceStr,
+                                    'package': result.data.data.jsskd.package,
+                                    'signType': result.data.data.jsskd.signType,
+                                    'paySign': result.data.data.jsskd.paySign,
+                                    success:(res)=>{
+                                        wx.navigateTo({
+                                            url: './payMentSuccess?payTotal='+this.inputValue+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+pay_type+'&order_id='+orderId_WXPay.order_id+'&open_id='+open_id
+                                        })
+                                    },
+                                })
+                            })
+                        }
+                    })
+                },
+                fail: ()=>{
+                    token(iv, encryptedData).then((res)=>{
+                        this.open_id = res.data.data.open_id
+                        this.$apply()
+                        wx.setStorageSync('openId&token',res.data.data);
+                        wx.setStorage({
+                            key: 'userInfo',
+                            data: e.detail.userInfo
+                        })
+                        let open_id = res.data.data.open_id;
+                        orderCash(this.shop_id,open_id,this.inputValue*100,res.data.data.token,Number(pay_type),this.coupon_id).then((res)=>{
+                            let order_id = res.data.data.order_id;
+                            let orderId_WXPay = res.data.data  // 订单ID、是否需要微信支付
+                            if(!Number(pay_type)){      // 选择支付方式（钱包支付）
+                                wx.showModal({
+                                    title: '支付提示',
+                                    content: '是否使用钱包支付￥'+this.inputValue,
+                                    success:(res)=>{
+                                        if(res.confirm){
+                                            wx.showLoading({
+                                                title: '发起支付...',
+                                                mask: true,    
+                                            });
+                                            if(!orderId_WXPay.needWxPay){   //钱包充足，不需发起微信支付
+                                                wx.redirectTo({
+                                                    url: './payMentSuccess?payTotal='+this.inputValue+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+pay_type+'&order_id='+orderId_WXPay.order_id+'&open_id='+open_id
+                                                });
+                                            }else{      //钱包余额不足，发起微信支付
+                                                WXPay(open_id,orderId_WXPay.order_id).then((result)=>{
+                                                let str = result.data.data.jsskd.timestamp.toString()
+                                                wx.hideLoading();
+                                                    wx.requestPayment({
+                                                        'timeStamp': str,
+                                                        'nonceStr':result.data.data.jsskd.nonceStr,
+                                                        'package': result.data.data.jsskd.package,
+                                                        'signType': result.data.data.jsskd.signType,
+                                                        'paySign': result.data.data.jsskd.paySign,
+                                                        success:(res)=>{
+                                                            wx.redirectTo({
+                                                                url: './payMentSuccess?payTotal='+this.inputValue+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+pay_type+'&order_id='+orderId_WXPay.order_id+'&open_id='+open_id
+                                                            });
+                                                        },
+                                                        fail:(res)=>{
+                                                            wx.showToast({
+                                                                title: '已取消支付',
+                                                                icon: 'none',
+                                                                duration: 1500,
+                                                                mask: false,
+                                                            });
+                                                        }
+                                                    })
+                                                })
+                                            }
+                                        }
+                                    }
+                                })
+                            }else{      //选择支付方式（微信支付）
+                                wx.showLoading({
+                                    title: '发起支付...',
+                                    mask: true,    
+                                });
+                                WXPay(open_id,order_id).then((result)=>{
+                                    let str = result.data.data.jsskd.timestamp.toString()
+                                    wx.hideLoading();
+                                    wx.requestPayment({
+                                        'timeStamp': str,
+                                        'nonceStr':result.data.data.jsskd.nonceStr,
+                                        'package': result.data.data.jsskd.package,
+                                        'signType': result.data.data.jsskd.signType,
+                                        'paySign': result.data.data.jsskd.paySign,
+                                        success:(res)=>{
+                                            wx.navigateTo({
+                                                url: './payMentSuccess?payTotal='+this.inputValue+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+pay_type+'&order_id='+orderId_WXPay.order_id+'&open_id='+open_id
+                                            })
+                                        },
+                                    })
+                                })
+                            }
+                            })
+                    })
+                }
+            });
+        },
+        haveCard(){
+            if(this.open_id && this.inputValue){
+                // 获取用户coupons
+                wx.showLoading({
+                    title: 'loading...',
+                    mask: true,
+                });
+                wx.navigateTo({
+                    url: '../activityIndex/activitys/selectCashCoupon?open_id='+this.open_id+'&shop_id='+this.options.shop_id+'&total_fee='+this.inputValue*100,
+                    success:()=>{
+                        wx.hideLoading();
+                    }
+                })
+                // cashCoupons(this.open_id,this.options.shop_id,this.inputValue*100).then((res)=>{
+                //     this.coupons = res.data.data
+                //     this.$apply()
+                    
+                // })
+            }else{
+                if(!this.open_id){
+                    wx.showToast({
+                        title: '请先授权微信登录',
+                        icon: 'none',
+                        duration: 1500,
+                        mask: false,
+                    });
+                }else if(!this.inputValue){
+                    wx.showToast({
+                        title: '请输入买单金额',
+                        icon: 'none',
+                        duration: 1500,
+                        mask: false,
+                    });
+                }
+            }
+        }
+    };
+    computed = {
+        inputValid () {
+            if (this.inputValue === '0' || this.inputValue === '0.' || !this.inputValue || this.inputValue === '0.0' || this.inputValue === '0.00' ||
+                this.inputValue[this.inputValue.length - 1] === '.') {
+                return false
+            } else if(this.inputValue > 50000){
+                this.topPrompt = false
+                return false
+            }else {
+                this.topPrompt = true
+                return true
+            }
+        }
+    }
+    events = {};
+    onLoad(options) {
+        wx.getStorage({
+            key: 'openId&token',
+            success: res => {
+                this.open_id = res.data.open_id
+                this.$apply()
+            }
+        });
+        // console.log(options)
+        this.options = options
+        this.shop_id = options.shop_id
+    };
+    onShow(){
+        wx.getStorage({
+            key: 'couponItem',
+            success:(res)=>{
+                this.coupon_id = res.data.id
+                this.couponItem = res.data
+                this.$apply()
+                if(res.data.type==0){
+                    this.inputValue = Number(this.inputValue)-res.data.discount_price
+                    this.$apply()
+                }else if (res.data.type==1){
+                    this.inputValue = Number(this.inputValue)*(res.data.discount_price/10)
+                    this.$apply()
+                }else{
+                    this.inputValue = Number(this.inputValue)-res.data.par_value
+                    this.$apply()
+                }
+            }
+        })
+    }
+    onUnload(){
+        wx.removeStorage({key: 'couponItem'})
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class="numBeyond {{topPrompt?'':'numBeyondShow'}}">总支付金额不能超过 ¥ 50000元</view>
+        <view class='payMentBox'>
+            <view class='payMentBox_top'>
+                <image src='{{options.logo_url}}'/>
+                <view class='payMentBox_top_right'>
+                    <view>收款方:{{options.title}}</view>
+                    <view>手机买单有机会赢取免单机会哦!</view>
+                </view>
+            </view>
+            <view class='payMentBox_bottom'>
+                <view class='userIput'>
+                    <view>消费总额 ¥</view>
+                    <digit :inputValue.sync="inputValue"></digit>
+                </view>
+                <view wx:if="{{inputValue}}" class='largeMoney'><text>¥</text>{{inputValue}}</view>
+                <view wx:else="{{inputValue}}" class='largeMoney' style='color:#b1b1b1;'><text>¥</text>0.00</view>
+                <!-- 选券 -->
+                <view class='voucherBox' @tap='haveCard' style='background-color:#f1f1f1;position: relative;'>
+                    <view class='zhuangshi'></view>
+                    <view style='justify-content: flex-start;flex:.3;'>选择抵用券</view>
+                        <view style='display:flex;justify-content: flex-end;flex:.7;'>
+                            <block wx:if='{{!couponItem.id}}'><text></text>></block>
+                            <block wx:else>
+                                <block wx:if='{{!couponItem.type}}'>满{{couponItem.discount_min}}元减{{couponItem.discount_price}}元</block>
+                                <block wx:if ='{{couponItem.type == 1}}'>{{couponItem.discount_price}}折优惠券</block>
+                                <block wx:if ='{{couponItem.type == 2}}'>￥{{couponItem.par_value}}现金券</block>
+                            </block>
+                        </view>
+                </view>
+            </view>
+        </view>
+        <view class="btnBox">
+            <button disabled="{{inputValid ? false : true}}"  class="btn {{inputValid?'flex-center':''}}" open-type='getUserInfo' data-payType = '1'  @getuserinfo='confirmPayMent'>微信支付</button>
+            <button disabled="{{inputValid ? false : true}}"  class="btn {{inputValid?'flex-center':''}}" open-type='getUserInfo' data-payType = '0'  @getuserinfo='confirmPayMent'>钱包支付</button>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    page{
+        background-image: url('https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E4%B9%B0%E5%8D%95bg.png');
+        background-size: 100%;
+    }
+    .payMentBox{
+        box-sizing: border-box;
+        padding: 40rpx 30rpx;
+        position: absolute;
+        width: 677rpx;
+        height: 455rpx;
+        background-color: #fafafa;
+        left: 0;
+        right: 0;
+        margin: auto;
+        top: 207rpx;
+        border-radius: 10rpx;
+        .payMentBox_top{
+            display: flex;
+            image{
+                width: 120rpx;
+                height: 120rpx;
+                border-radius: 7rpx;
+            }
+            .payMentBox_top_right{
+                padding-left: 20rpx;
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                view:nth-child(1){
+                    font-size: 30rpx;
+                }
+                view:nth-child(2){
+                    margin-top: 15rpx;
+                    font-size: 24rpx;
+                    color: #666;
+                }
+            }
+        }
+    }
+    .userIput{
+        border-bottom: 1px dashed #b1b1b1;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding-bottom: 15rpx;
+        padding-top: 15rpx;
+        view{
+            color: #333;
+            padding-left: 20rpx;
+            font-size: 28rpx;
+            letter-spacing: 2rpx;
+        }
+    }
+    .largeMoney{
+        letter-spacing: 5rpx;
+        width: 100%;
+        text-align: center;
+        font-size: 85rpx;
+        font-weight: bold;
+        color: #333;
+        text{
+            display: inline-block;
+            transform: translateY(-5rpx);
+            font-size: 60rpx;
+        }
+    }
+    .btnBox{
+        position: absolute;
+        left: 0;
+        right: 0;
+        margin: auto;
+        top: 700rpx;
+        height: 75rpx;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0 30rpx;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        .btn {
+            width: 280rpx;
+            height: 75rpx;
+            background-color:#ff9955;
+            color: white;
+            text-align: center;
+            line-height: 75rpx;
+            font-size: 33rpx;
+        }
+    }
+    .flex-center{
+        box-shadow: 0 0 10rpx #f85b27;
+    }
+    .zhuangshi{
+        position: absolute;
+        background-color: #ff9955;
+        left: 16rpx;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        width: 4rpx;
+        height: 26rpx;
+    }
+</style>

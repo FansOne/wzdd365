@@ -1,0 +1,276 @@
+<script>
+import wepy from 'wepy';
+import foodsItem from '../../components/foodsItem';
+import api from '../../api/api';
+import { orderDetail,orderSigneds,WXPay } from '../../api/request'
+
+export default class orderDetails extends wepy.page {
+    config = {
+        navigationBarTitleText: '订单详情',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {
+        foodsItem
+    };
+
+    data = {
+        allData:{},
+        foodsItem:[],
+        qr:[],
+        open_id:'',
+        house:'00',
+        minute:'00',
+        second:'00',
+        //定时器
+        timer:'',
+    };
+    methods = {
+        //图片预览
+        previewImage(){
+            wx.previewImage({
+                current: this.qr[0], 
+                urls: this.qr
+            })
+        },
+        orderSigneds(){
+            orderSigneds(this.allData.id,this.open_id).then((res)=>{
+                if(res.data.status == 'ok'){
+                    this.qr = []
+                    this.$apply()
+                    wx.showToast({
+                        title: '收货成功',
+                        icon: 'success'
+                    })
+                    orderDetail(this.allData.id,this.open_id).then((result)=>{
+                        result.data.data.total_fee = (result.data.data.total_fee/100).toFixed(2)
+                        // console.log(result.data.data)
+                        this.qr.push(result.data.data.qr_url)
+                        this.foodsItem = result.data.data.goods
+                        this.allData = result.data.data
+                        this.$apply()
+                    })
+                }else{
+                    wx.showToast({
+                        title: res.data.message,
+                        icon: 'none'
+                    })
+                }
+            })
+        },
+        payMentPages(order_id){
+            wx.showLoading({
+                title: '发起支付...' ,
+                mask: true,
+            });
+            WXPay(this.open_id,order_id).then((result)=>{
+                let str = result.data.data.jsskd.timestamp.toString()
+                wx.hideLoading();
+                wx.requestPayment({
+                    'timeStamp': str,
+                    'nonceStr':result.data.data.jsskd.nonceStr,
+                    'package': result.data.data.jsskd.package,
+                    'signType': result.data.data.jsskd.signType,
+                    'paySign': result.data.data.jsskd.paySign,
+                    success:(res)=>{
+
+                    },
+                    fail:(res)=>{
+                        wx.showToast({
+                            title: '已取消支付',
+                            icon: 'none',
+                            duration: 1500,
+                            mask: false,
+                        });
+                    }
+                })
+            })
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        wx.getStorage({
+            key: 'openId&token',
+            success: (res)=> {
+                this.open_id = res.data.open_id
+                this.$apply()
+                orderDetail(options.order_id,res.data.open_id).then((result)=>{
+                    result.data.data.total_fee = (result.data.data.total_fee/100).toFixed(2)
+                    console.log(result.data.data)
+                    this.qr.push(result.data.data.qr_url)
+                    this.foodsItem = result.data.data.goods
+                    this.allData = result.data.data
+                    this.$apply()
+                    let num = result.data.data.repay_time
+                    if(num != 'undefined'){
+                        this.timer = setInterval(()=>{
+                            this.countDown(num)
+                            num --;
+                            if(num < 0){
+                                clearInterval(this.timer)
+                            }
+                        },1000)
+                    }
+                })
+            }
+        })
+    };
+    //倒计时函数
+    countDown(res){
+        let house;
+        let minute;
+        let second;
+        if(res<3600){
+            house = '00';
+        }else{
+            house = String(parseInt(res/3600));
+            house = (house.length> 1) ? house : '0' + house;
+        }
+        if(res<60){
+            minute = '00';
+        }else{
+            minute = String(parseInt((res%3600)/60));
+            minute = (minute.length> 1) ? minute : '0' + minute;
+        }
+        
+        second = String(res - house*3600 - minute*60);
+        second = (second.length> 1) ? second : '0' + second;
+        this.house = house
+        this.minute = minute
+        this.second = second
+        this.$apply()
+    };
+    onUnload(){
+        clearInterval(this.timer)
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class="container">
+        <view class='stepBox' style='border-bottom:1rpx solid #f1f1f1' wx:if='{{allData.type !==11}}'>
+            <view class='stepBox_item'>
+                <view class='emptyCircle' style='border: 1rpx solid #ff9e6e;'><view style='background-color: #ff9e6e;'></view></view>
+                <view class='emptyCircle2' style='color:#ff9e6e'>选择商品</view>
+            </view>
+            <view class='stepBox_item'>
+                <view class='emptyCircle' style="{{allData.pay_status ==1?'border:1rpx solid #ff9e6e':''}}"><view style="{{allData.pay_status ==1?'background-color:#ff9e6e':''}}"></view></view>
+                <view class='emptyCircle2' style="{{allData.pay_status ==1?'color:#ff9e6e':''}}">支付下单</view>
+            </view>
+            <view class='stepBox_item'>
+                <view class='emptyCircle' style="{{allData.shippment_status ==2?'border:1rpx solid #ff9e6e':''}}"><view style="{{allData.shippment_status ==2?'background-color:#ff9e6e':''}}"></view></view>
+                <view class='emptyCircle2' wx:if='{{allData.type == 0}}' style="{{allData.shippment_status ==2?'color:#ff9e6e':''}}">堂食</view>
+                <view class='emptyCircle2' wx:elif='{{allData.type == 1}}' style="{{allData.shippment_status ==2?'color:#ff9e6e':''}}">外卖配送</view>
+                <view class='emptyCircle2' wx:else  style="{{allData.shippment_status ==2?'color:#ff9e6e':''}}">{{allData.shippment_status?(allData.shippment_status==1?'物流配送':'已签收'):'门店自提'}}</view>
+            </view>
+            <view class='line'></view>
+            <view class='line line2' style="{{allData.pay_status ==1?'background-color:#ff9e6e':''}}"></view>
+        </view>
+        <!-- 用户地址 -->
+        <view class='userInfoBox' hidden="{{allData.mobile === '0'}}">
+            <view class='userInfoBox_top'>
+                <view>姓名：{{allData.truename}}</view>
+                <view><icon class='iconfont icon-dianhua' style='font-size:40rpx;line-height:70rpx;'/><text style='padding-left:10rpx;'>{{allData.mobile}}</text></view>
+            </view>
+            <view class='userInfoBox_bottom'>地址：{{allData.address}}</view>
+        </view>
+        <!-- 订单商品组件 -->
+        <foodsItem :syncTitle.sync="foodsItem"/>
+        <view class='messList' wx:if='{{allData.type == 1}}'>配送费：￥{{allData.outsale_fee}}</view>
+        <view class='messList' wx:elif="{{allData.type != 1 && allData.mobile != '0'}}">物流费用：￥{{allData.shippment_fee}}</view>
+        <view class='messList'>支付总额：￥{{allData.total_fee}}</view>
+        <view class='messList'>支付方式：{{allData.pay_type == 0?'钱包支付':'微信支付'}}</view>
+        <view class="messList">支付状态：{{allData.pay_status==1?'已付款':'待付款'}}</view>
+        <view class="messList" wx:if='{{allData.shippment_status==0}}'>门店地址：{{allData.province}}{{allData.city}}{{allData.district}}{{allData.address}}</view>
+        <view class='messList'>交易流水号：{{allData.out_trade_no}}</view>
+        <view class='messList'>下单时间：{{allData.created_at}}</view>
+        <view wx:if="{{allData.invoice_bank_name}}" class='show-faPiao'>
+            <view>
+                <view style='font-size:26rpx;text-align:center'>-- 开票信息 --</view>
+                <view style='border-top:none;border-bottom:none;font-size:24rpx;' wx:if='{{allData.invoice_title}}'>名称：{{allData.invoice_title}}</view>
+                <view style='font-size:24rpx;'>税号：{{allData.invoice_tax_number}}</view>
+                <view style='font-size:24rpx;'>地址：{{allData.invoice_company_address}}</view>
+                <view style='font-size:24rpx;'>开户行：{{allData.invoice_bank_name}}</view>
+                <view style='font-size:24rpx;'>开户银行账户：{{allData.invoice_bank_account}}</view>
+            </view>
+        </view>
+        <!-- 活动二维码 -->
+        <view wx:if='{{(allData.type == 2 ||allData.type == 3 || allData.type == 4 || allData.type == 5 || allData.type == 10) && allData.shippment_status == 0 && allData.pay_status==1}}' class='qr'>
+            <image src='{{allData.qr_url}}' @tap='previewImage'/>
+            <view>(消费时出示此码)</view>
+        </view>
+        <!-- 收货按钮 -->
+        <view class="collectGoods" wx:if='{{allData.pay_status==1 && allData.shippment_status == 1}}'>
+            <view class='collectGoods_left'><icon class='iconfont icon-dianhua' style='font-size:50rpx;color:#000;'/><view>{{allData.tel}}</view></view>
+            <view class='collectGoods_right'><button @tap='orderSigneds'>确认收货</button></view>
+        </view>
+        <!-- 付款按钮 -->
+        <view class="collectGoods" wx:if='{{allData.pay_status==0}}'>
+            <view class='collectGoods_left'><icon class='iconfont icon-dianhua' style='font-size:50rpx;color:#000;'/><view>{{allData.tel}}</view></view>
+            <view class='collectGoods_right'>
+                <button wx:if='{{allData.closed == 0}}' @tap='payMentPages({{allData.id}})'>立即付款<text style='padding-left:6rpx;'>{{house}}:{{minute}}:{{second}}</text></button>
+                <button wx:else disabled="true" style='background-color: #b7b7b7;'>已失效</button>
+            </view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .collectGoods{
+        background-color: #fff;
+        box-sizing: border-box;
+        padding: 0 30rpx;
+        position: fixed;
+        display: flex;
+        align-items: center;
+        bottom: 0rpx;
+        width: 100%;
+        height: 95rpx;
+        border-top:1rpx solid #f1f1f1;
+        .collectGoods_left{
+            display: flex;
+            align-items: center;
+            flex: 1;
+            font-size: 26rpx;
+            icon{
+                transform: translateY(2rpx);
+            }
+            view{
+                padding-left: 10rpx;
+            }
+        }
+        .collectGoods_right{
+            width: 215rpx;
+            button{
+                padding: 0;
+                width: 234rpx;
+                height: 65rpx;
+                background-color: #ff9e6e;
+                color: #fff;
+                font-size: 26rpx;
+            }
+        }
+    }
+    .qr{
+        width: 100%;
+        padding-top: 25rpx;
+        padding-bottom: 25rpx; 
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        image{
+            width: 345rpx;
+            height: 345rpx;
+        }
+        view{
+            font-size: 24rpx;
+            color: #666;
+        }
+    }
+    .emptyCircle2{
+        width: 96rpx;
+        text-align: center;
+    }
+</style>

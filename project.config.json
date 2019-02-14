@@ -1,0 +1,353 @@
+{
+	"description": "wzdd365",
+	"setting": {
+		"urlCheck": true,
+		"es6": false,
+		"postcss": false,
+		"minified": false,
+		"newFeature": true
+	},
+	"compileType": "miniprogram",
+	"appid": "wx0ca14ea9f5a09d65",
+	"projectname": "wzdd365",
+	"miniprogramRoot": "dist/",
+	"condition": {
+		"search": {
+			"current": -1,
+			"list": []
+		},
+		"conversation": {
+			"current": -1,
+			"list": []
+		},
+		"plugin": {
+			"current": -1,
+			"list": []
+		},
+		"game": {
+			"list": []
+		},
+		"miniprogram": {
+			"current": 52,
+			"list": [
+				{
+					"id": -1,
+					"name": "秒杀",
+					"pathName": "pages/secondKill",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "门店",
+					"pathName": "pages/merchantStore",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "个人中心",
+					"pathName": "pages/aboutTab",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "手机绑定",
+					"pathName": "pages/bindingPhone",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "切换城市",
+					"pathName": "pages/selectCity",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "indexSearch",
+					"pathName": "pages/indexSearch",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "周边",
+					"pathName": "pages/peripheryTab",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "手机绑定",
+					"pathName": "pages/phoneLogin",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "服务地址",
+					"pathName": "pages/severAddress",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "意见反馈",
+					"pathName": "pages/feedbackFeedback",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "点餐",
+					"pathName": "pages/dianCan",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "门店预约",
+					"pathName": "pages/subscribe",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "领券",
+					"pathName": "pages/voucher",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "买单",
+					"pathName": "pages/payMent",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "订单TAB",
+					"pathName": "pages/orderTab",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "抽奖列表",
+					"pathName": "pages/chouJiang",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "秒杀详情",
+					"pathName": "activityIndex/activitys/killDetails",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "秒杀订单确认",
+					"pathName": "activityIndex/activitys/killOrderConfirm",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "秒杀支付成功",
+					"pathName": "activityIndex/activitys/killPaySuccess",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "拼团详情",
+					"pathName": "activityIndex/activitys/collageDetails",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "抽奖详情",
+					"pathName": "activityIndex/activitys/luckDrawDetails",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "抽奖订单确认",
+					"pathName": "activityIndex/activitys/luckDrawCofirm",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "抽奖支付成功",
+					"pathName": "activityIndex/activitys/luckDrawSuccess",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "团购详情",
+					"pathName": "activityIndex/activitys/groupDetails",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "我的收藏",
+					"pathName": "activityIndex/personalCenter/userCollections",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "用户钱包",
+					"pathName": "activityIndex/personalCenter/userWallet",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "优惠券-个人中心",
+					"pathName": "activityIndex/personalCenter/cardVoucher",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "我的金豆-个人中心",
+					"pathName": "activityIndex/personalCenter/goldBean",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "金豆充值-个人中心",
+					"pathName": "activityIndex/personalCenter/beanExchange",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "金豆充值成功-个人中心",
+					"pathName": "activityIndex/personalCenter/beanPaySuccess",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "钱包充值-个人中心",
+					"pathName": "activityIndex/personalCenter/walletRecharge",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "扫码付款",
+					"pathName": "activityIndex/personalCenter/scavengingPayment",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "转盘抽奖",
+					"pathName": "activityIndex/activitys/circleDrawLottery",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "出行地图",
+					"pathName": "activityIndex/activitys/travelMap",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "生活",
+					"pathName": "activityIndex/activitys/life",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "发布信息",
+					"pathName": "activityIndex/activitys/userRelease",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "生活详情",
+					"pathName": "activityIndex/activitys/lifeDetails",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "点餐支付确认",
+					"pathName": "activityIndex/activitys/dianCanConfirmOrder",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "点餐支付成功",
+					"pathName": "activityIndex/activitys/dianCanPaySuccess",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "申请退款",
+					"pathName": "activityIndex/activitys/applicationRefund",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "订单评价",
+					"pathName": "activityIndex/activitys/evaluate",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "出行地图",
+					"pathName": "activityIndex/activitys/travelMap",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "更多行业",
+					"pathName": "activityIndex/activitys/indexIconMore",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "选择优惠券",
+					"pathName": "activityIndex/activitys/cardLists",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "商户评论",
+					"pathName": "pages/businessReviews",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "分享",
+					"pathName": "activityIndex/activitys/collageShare",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "拼团支付成功",
+					"pathName": "activityIndex/activitys/collagePaySucess",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "快速买单支付成功",
+					"pathName": "pages/payMentSuccess",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "新用户领奖",
+					"pathName": "pages/newUserCJ",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "a",
+					"pathName": "pages/industry",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "新用户",
+					"pathName": "pages/newUserCJ",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "ss",
+					"pathName": "activityIndex/activitys/circleDrawZJ",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "啊啊啊啊",
+					"pathName": "pages/startUp"
+				}
+			]
+		}
+	}
+}

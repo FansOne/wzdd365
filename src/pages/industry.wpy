@@ -1,0 +1,253 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api';
+import indexGoods from '../components/indexGoods';
+
+export default class industry extends wepy.page {
+    config = {
+        navigationBarTitleText: '',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+        disableScroll:true,
+    };
+    components = {
+        indexGoods:indexGoods
+    };
+    data = {
+        navbar: ['距离','特色商家','好评'],
+        currentTab: 0,
+        goodsClass:[
+            {
+                title:'简餐',
+                cover:'../images/简餐.png'
+            },
+            {
+                title:'中餐',
+                cover:'../images/中餐.png'
+            },
+            {
+                title:'西餐',
+                cover:'../images/西餐.png'
+            },
+            {
+                title:'自助',
+                cover:'../images/自助.png'
+            },
+        ],
+        //推荐商品
+        indexGoods:[],
+        stars: [0, 1, 2, 3, 4],
+        sort:0,
+        options:'',
+        lng:'',
+        lat:'',
+        page:1,
+        city:'',
+    };
+    methods = {
+        goindexsearch(){
+            wx.navigateTo({
+                url: './indexSearch'
+            })
+        },
+        navbarTap(e){
+            this.page = 1
+            wx.showLoading({
+                title: '加载中...',
+                mask: true,
+            });
+            this.currentTab = e.currentTarget.dataset.idx
+            this.sort = e.currentTarget.dataset.idx
+            if(this.city){
+                this.merchantGeoCity(this.lng,this.lat,this.options,this.city)
+            }else{
+                this.merchantGeo(this.lng,this.lat,this.options)
+            }
+        },
+        scrolltolower(){
+            this.page++
+            wx.showLoading({
+                title: '加载中...',
+                mask: true,
+            });
+            if(this.city){
+                this.merchantGeoCity(this.lng,this.lat,this.options,this.city)
+            }else{
+                this.merchantGeo(this.lng,this.lat,this.options)
+            }
+        },
+    };
+
+    events = {};
+    onLoad(options) {
+        this.options = options
+        wx.setNavigationBarTitle({
+            title: options.title,
+        });
+        // this.industrySub(options.industry_id)
+        wx.getStorage({
+            key: 'localWhere',
+            success: res => {
+                this.lng = res.data.lng
+                this.lat = res.data.lat
+                this.$apply()
+            }
+        });
+        wx.getStorage({
+            key: 'selectCity',
+            success: res => {
+                this.city = res.data
+                this.$apply()
+                this.merchantGeoCity(this.lng,this.lat,this.options,res.data)
+            },
+            fail:()=>{
+                this.merchantGeo(this.lng,this.lat,this.options)
+            }
+        });
+    };
+    onUnload(){
+        this.page = 1
+    }
+    // 获取商户信息
+    async merchantGeo(lng,lat,options){
+        const url = api.apiMall + '/shop/geo';
+        const data = {
+            industry_id: options.industry_id,
+            lng: lng,
+            lat: lat,
+            sort: this.sort,
+            page: this.page,
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data:data
+        }).then((res)=>{
+            wx.hideLoading();
+            res.data.data.rows.forEach(element => {
+                element.indexGoods = true
+                element.minimum_charge = Number(element.minimum_charge).toFixed(2)
+            });
+            if(this.page == 1){
+                this.indexGoods = res.data.data
+                this.$apply()
+            }else{
+                res.data.data.rows.forEach(element => {
+                    this.indexGoods.rows.push(element)
+                    this.$apply()
+                });
+            }
+        })
+    }
+    // 根据城市获取商户信息
+    async merchantGeoCity(lng,lat,options,city){
+        const url = api.apiMall + '/shop/city';
+        const data = {
+            industry_id: options.industry_id,
+            lng: lng,
+            lat: lat,
+            city: city,
+            sort: this.sort,
+            page: this.page,
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data:data
+        }).then((res)=>{
+            wx.hideLoading();
+            res.data.data.rows.forEach(element => {
+                element.indexGoods = true
+                element.minimum_charge = Number(element.minimum_charge).toFixed(2)
+            });
+            if(this.page == 1){
+                this.indexGoods = res.data.data
+                this.$apply()
+            }else{
+                res.data.data.rows.forEach(element => {
+                    this.indexGoods.rows.push(element)
+                    this.$apply()
+                });
+            }
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <!-- <view class='industryTop'>
+            <view wx:for='{{goodsClass}}' wx:key='' class='industryTop_item'>
+                <image src='{{item.cover}}'/>
+                <view>{{item.title}}</view>
+            </view>
+        </view> -->
+        <!-- 搜索框 -->
+        <view class="search">
+            <view @tap='goindexsearch'>店铺查找<icon class='iconfont icon-sousuo'/></view>
+        </view>
+        <!--Tab菜单-->
+        <scroll-view scroll-x class="navbar scrollNav">
+            <!--循环-->
+            <view wx:for="{{navbar}}" data-idx="{{index}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap" style='width:33%'>
+                <view class="notice" wx:if="{{count[index]>0}}">{{count[index]}}</view>
+                {{item}}
+            </view>
+        </scroll-view>
+        <!-- 推荐商品组件 -->
+        <scroll-view style='padding-top:20rpx;' scroll-y class='moreDataBox' bindscrolltolower='scrolltolower'>
+            <indexGoods :syncTitle.sync="indexGoods" :syncStar.sync="stars"/>
+        </scroll-view>
+    </view>
+</template>
+
+<style lang="less">
+    // .industryTop{
+    //     display: flex;
+    //     justify-content: space-between;
+    //     box-sizing: border-box;
+    //     padding: 25rpx 30rpx;
+    //     border-bottom: 1px solid #f1f1f1;
+    //     .industryTop_item{
+    //         width: 108rpx;
+    //         display: flex;
+    //         flex-direction: column;
+    //         align-items: center;
+    //         image{
+    //             width: 108rpx;
+    //             height: 78rpx;
+    //         }
+    //         view{
+    //             font-size: 30rpx;
+    //             color: gray;
+    //             margin-top: 30rpx;
+    //         }
+    //     }
+    // }
+    .search{
+        width: 100%;
+        border-bottom: 1rpx solid #f1f1f1;
+        display: flex;
+        justify-content: center;
+        padding: 20rpx 0;
+        view{
+            position: relative;
+            width: 704rpx;
+            background-color: #f7f7f7;
+            box-sizing: border-box;
+            padding: 15rpx 70rpx;
+            border-radius: 50rpx;
+            font-size: 26rpx;
+            color: #666;
+            icon{
+                position: absolute;
+                left: 30rpx;
+                top: 0rpx;
+                font-size: 38rpx;
+            }
+        }
+    }
+    .moreDataBox{
+        height: 1014rpx;
+    }
+</style>

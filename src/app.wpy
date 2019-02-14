@@ -1,0 +1,176 @@
+<style lang="less">
+  @import "./styles/base";
+  @import './styles/iconfont';
+  @import './styles/iconfont_i';
+</style>
+
+<script>
+import wepy from 'wepy'
+import api from './api/api'
+import 'wepy-async-function'
+
+import { setStore } from 'wepy-redux'
+import configStore from './store'
+
+const store = configStore()
+setStore(store)
+
+export default class extends wepy.app {
+  config = {
+    pages: [
+      'pages/startUp',
+      'pages/index',
+      'pages/peripheryTab',
+      'pages/orderTab',
+      'pages/aboutTab',
+      'pages/industry',
+      'pages/secondKill',
+      'pages/merchantStore',
+      'pages/selectCity',
+      'pages/indexSearch',
+      'pages/phoneLogin',
+      'pages/severAddress',
+      'pages/feedbackFeedback',
+      'pages/invoicesAdimin',
+      'pages/dianCan',
+      'pages/subscribe',
+      'pages/voucher',
+      'pages/payMent',
+      'pages/collageIndex',
+      'pages/chouJiang',
+      'pages/groupPurchase',
+      'pages/businessReviews',
+      'pages/payMentSuccess',
+      'pages/newUserCJ',
+    ],
+    subPackages:[
+      {
+        root: 'activityIndex',
+        pages: [
+          "activitys/killDetails",
+          'activitys/killOrderConfirm',
+          'activitys/groupOrderConfirm',
+          'activitys/killPaySuccess',
+          'activitys/collageDetails',
+          'activitys/luckDrawDetails',
+          'activitys/dianCanConfirmOrder',
+          'activitys/applicationRefund',
+          'activitys/selectUseCoupon',
+          'activitys/selectCashCoupon',
+          'activitys/evaluate',
+          'activitys/orderDetails',
+          'activitys/collageConfirmOrder',
+          'activitys/cardLists',
+          'activitys/commentSuccess',
+          'activitys/collageShare',
+          'activitys/life',
+          'activitys/circleDrawZJ',
+          'activitys/collagePaySucess',
+          'activitys/indexIconMore',
+          'activitys/dianCanPaySuccess',
+          'activitys/scenicMap',
+          'activitys/lifeDetails',
+          'activitys/userRelease',
+          'activitys/luckDrawCofirm',
+          'activitys/luckDrawSuccess',
+          'activitys/groupDetails',
+          'activitys/circleDrawLottery',
+          'activitys/travelMap',
+          'activitys/webView',
+          'personalCenter/userCollections',
+          'personalCenter/userWallet',
+          'personalCenter/cardVoucher',
+          'personalCenter/goldBean',
+          'personalCenter/beanExchange',
+          'personalCenter/beanPaySuccess',
+          'personalCenter/walletRecharge',
+          'personalCenter/scavengingPayment'
+        ]
+      }
+    ],
+    window: {
+      backgroundTextStyle: 'light',
+      navigationBarBackgroundColor: '#fff',
+      navigationBarTitleText: '玩转当地',
+      navigationBarTextStyle: 'black'
+    },
+    tabBar: {
+      color: "#999999",
+      selectedColor: "#ff9765",
+      backgroundColor: "#f9f9f9",
+      borderStyle: "black",
+      list: [{
+        pagePath: "pages/index",
+        text: "首页",
+        iconPath: "images/首页.png",
+        selectedIconPath: "images/首页1.png"
+      },{
+        pagePath: "pages/peripheryTab",
+        text: "周边",
+        iconPath: "images/周边1.png",
+        selectedIconPath: "images/周边.png"
+      },{
+        pagePath: "pages/orderTab",
+        text: "订单",
+        iconPath: "images/订单.png",
+        selectedIconPath: "images/订单1.png"
+      },{
+        pagePath: "pages/aboutTab",
+        text: "我的",
+        iconPath: "images/我的.png",
+        selectedIconPath: "images/我的1.png" 
+      }]
+    }
+  }
+
+  globalData = {
+    userInfo: null
+  }
+
+  constructor () {
+    super()
+    this.use('requestfix')
+    this.use('promisify');
+  }
+
+  onLaunch(options) {
+    // wx.checkSession({
+    //     success: function() {},
+    //     // session_key 过期
+    //     fail: function() {
+    //         // session_key过期，重新登录
+    //          wx.login({
+    //           success: function(res) {
+    //               const url = api.apiMall+'/authorization/miniprogram';
+    //               const data = {
+    //                 code: res.code,
+    //               };
+    //                wx.request({
+    //                 url: url,
+    //                 data: data,
+    //                 method: 'GET',
+    //                 success: res => {
+    //                   // console.log(res.data.data)
+    //                   wepy.$instance.globalData.open_id = res.data.data.open_id
+    //                   wx.setStorage({
+    //                     key: 'open_id',
+    //                     data: res.data.data.open_id
+    //                   });
+    //                   wepy.request({
+    //                     url: api.apiMall+'/user/token',
+    //                     method: 'GET',
+    //                     data: {
+    //                       open_id: res.data.data.open_id
+    //                     }
+    //                   }).then((res)=>{
+    //                     console.log(res.data.data)
+    //                   })
+    //                 }
+    //               });
+    //           }
+    //         })
+    //     }
+    // })
+  }
+}
+</script>

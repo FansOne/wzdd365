@@ -1,0 +1,35 @@
+<script>
+import wepy from 'wepy';
+
+export default class invoicesAdimin extends wepy.page {
+    config = {
+        navigationBarTitleText: '发票管理',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {};
+    methods = {};
+
+    events = {};
+    onLoad() {};
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='kong'>您还没添加发票抬头</view>
+    </view>
+</template>
+
+<style lang="less">
+    .kong{
+        margin-top: 500rpx;
+        font-size: 24rpx;
+        color: #969696;
+        width: 100%;
+        text-align: center;
+    }
+</style>

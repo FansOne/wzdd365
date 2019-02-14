@@ -1,0 +1,208 @@
+<script>
+import wepy from 'wepy';
+import classificationItem from '../../components/classificationItem';
+import token from '../../api/getToken'
+import {catelog,requirement} from '../../api/request';
+
+let navbar = [{id:0,title:'全部'}];
+export default class travelMap extends wepy.page {
+    config = {
+        navigationBarTitleText: '生活',
+        // navigationBarBackgroundColor: '#ff9e6e',
+        disableScroll:true,
+    };
+    components = {
+        classificationItem:classificationItem
+    };
+
+    data = {
+        imgUrls: [
+            'http://img02.tooopen.com/images/20150928/tooopen_sy_143912755726.jpg',
+            'http://img06.tooopen.com/images/20160818/tooopen_sy_175866434296.jpg',
+            'http://img06.tooopen.com/images/20160818/tooopen_sy_175833047715.jpg'
+        ],
+        navbar: [],
+        currentTab: 0,
+        travelMapListItem:[],
+        type:0,
+        page:1,
+        scrollLeft:0,
+    };
+    methods = {
+        navbarTap(index,id){
+            this.travelMapListItem = []
+            this.type = id
+            this.page =1
+            this.currentTab = index
+            requirement(id,this.page).then((res)=>{
+                this.travelMapListItem = res.data.data.rows
+                this.$apply()
+            })
+        },
+        userRelease(e){
+            let iv = e.detail.iv;
+            let encryptedData = e.detail.encryptedData;
+            wx.showLoading({title: 'Loading...',mask: true});
+            wx.getStorage({
+                key: 'openId&token',
+                success: res => {
+                    wx.hideLoading();
+                    wx.navigateTo({
+                        url: './userRelease?&open_id='+res.data.open_id
+                    });
+                },
+                fail:()=>{
+                    token(iv, encryptedData).then((res)=>{
+                        wx.hideLoading();
+                        wx.setStorageSync('openId&token',res.data.data);
+                        wx.setStorage({
+                            key: 'userInfo',
+                            data: e.detail.userInfo
+                        })
+                        wx.navigateTo({
+                            url: './userRelease?&open_id='+res.data.data.open_id
+                        });
+                    })
+                }
+            });
+        },
+        scrolltolower(){
+            this.page++
+            wx.showLoading({
+                title: '加载中...',
+                mask: true,
+            });
+            requirement(this.type,this.page).then((res)=>{
+                wx.hideLoading();
+                if(res.data.data.rows.length){
+                    res.data.data.rows.forEach(element => {
+                        this.travelMapListItem.push(element)
+                        this.$apply()
+                    });
+                }else{
+                    wx.showToast({
+                        title: '已加载全部数据',
+                        icon: 'none',
+                        duration: 1500,
+                        mask: false,
+                    });
+                }
+            })
+        },
+        navigate_to(path){
+            let navigatePath = path.indexOf('https');
+            if(navigatePath == -1){
+                wx.navigateTo({
+                    url: path
+                })
+            }else{
+                wx.navigateTo({
+                    url: './webView?src='+path
+                })
+            }
+        }
+    };
+
+    events = {};
+    onShow(){
+        // 获取分类和文章
+        Promise.all([catelog(),requirement(this.type,1)]).then(result=>{
+            result[0].data.data.forEach(element => {
+                navbar.push(element)
+            });
+            wepy.$instance.globalData.classTitle = result[0].data.data
+            this.navbar = navbar
+            this.travelMapListItem = result[1].data.data.rows
+            this.$apply()
+        })
+    }
+    onLoad() {
+    };
+    onUnload(){ 
+        navbar = [{id:0,title:'全部'}];
+    }
+    onHide(){
+        navbar = [{id:0,title:'全部'}];
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <!-- 顶部轮播banner -->
+        <swiper indicator-dots autoplay interval="4000" circular>
+            <block wx:for="{{imgUrls}}" wx:key=''>
+                <swiper-item>
+                <image src="{{item}}" class="slide-image" mode='widthFix' @tap='navigate_to({{item.path}})'/>
+                </swiper-item>
+            </block>
+        </swiper>
+        <!-- TODOsearchInput -->
+        <!-- <input placeholder='搜索周边信息' placeholder-style='font-size:24rpx'/> -->
+        <!--Tab菜单-->
+        <scroll-view scroll-x class="navbar scrollNav" scroll-left="{{scrollLeft}}" scroll-with-animation>
+            <!--循环-->
+            <view wx:for="{{navbar}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap({{index}},{{item.id}})">
+                <view class="notice" wx:if="{{count[index]>0}}">{{count[index]}}</view>
+                {{item.title}}
+            </view>
+        </scroll-view>
+        <scroll-view scroll-y style='height:675rpx;background-color:#fff;' bindscrolltolower = 'scrolltolower'>
+            <!-- 分类lists -->
+            <classificationItem :syncTitle.sync="travelMapListItem"/>
+        </scroll-view>
+        <!-- 发布按钮icon -->
+        <button class='userRelease' open-type='getUserInfo' @getuserinfo='userRelease'><icon class='iconfont icon-fabuxinxi'/><view>我要发布</view></button>
+    </view>
+</template>
+
+<style lang="less">
+    page{
+        background-color: #f9f9f9;
+    }
+    swiper{
+        height: 329rpx;
+        image{
+            width: 100%;
+        }
+    }
+    input{
+        background-color: #fff;
+        width: 460rpx;
+        height: 48rpx;
+        line-height: 48rpx;
+        border-radius: 20rpx;
+        position: absolute;
+        left: 0;
+        right: 0;
+        margin: auto;
+        top: 20rpx;
+        padding: 0 20rpx;
+        font-size:24rpx;
+    }
+    .userRelease{
+        position: fixed;
+        left:0;
+        right: 0;
+        margin: auto;
+        bottom: 34rpx;
+        width: 312rpx;
+        height: 64rpx;
+        background-color: #ff9e6e;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 20rpx;
+        box-shadow: 0 0 10rpx #ff9e6e;
+        view{
+            color: #fff;
+            font-size: 24rpx;
+            transform: translateX(-7rpx);
+        }
+        icon{
+            font-size:27rpx;
+            color:#fff;
+            transform:translateX(-10rpx) translateY(-3rpx);
+        }
+    }
+</style>

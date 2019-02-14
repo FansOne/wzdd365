@@ -1,0 +1,61 @@
+<script>
+import wepy from 'wepy';
+import coupon from '../../components/userCoupon'
+import { userCoupons } from '../../api/request'
+
+export default class cardVoucher extends wepy.page {
+    config = {
+        navigationBarTitleText: '优惠券',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {
+        coupon:coupon
+    };
+
+    data = {
+        navbar: ['商家卡券', '平台卡券'],
+        couponData:[],
+        open_id:'',
+        currentTab: 0,
+        page:1,
+    };
+    methods = {
+        navbarTap(e){
+            this.currentTab = e.currentTarget.dataset.idx
+            userCoupons(this.open_id,this.currentTab,this.page).then((res)=>{
+                this.couponData = res.data.data.rows
+                this.$apply()
+            })
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.open_id = options.open_id
+        userCoupons(options.open_id,this.currentTab,this.page).then((res)=>{
+            this.couponData = res.data.data.rows
+            this.$apply()
+        })
+    };
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <!--Tab菜单-->
+        <view class="navbar">
+            <!--循环-->
+            <view wx:for="{{navbar}}" data-idx="{{index}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap">
+                <view class="notice" wx:if="{{count[index]>0}}">{{count[index]}}</view>
+                {{item}}
+            </view>
+        </view>
+        <!-- 分类 -->
+        <coupon :syncTitle.sync="couponData"/>
+    </view>
+</template>
+
+<style lang="less">
+/** less **/
+</style>

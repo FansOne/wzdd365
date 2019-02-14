@@ -1,0 +1,66 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api';
+import { shopComments } from '../api/request';
+import businessReviewsImg from '../components/businessReviewsImg';
+
+export default class businessReviews extends wepy.page {
+    config = {
+        navigationBarTitleText: '评价',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {
+        businessReviewsImg:businessReviewsImg
+    };
+
+    data = {
+        stars: [0, 1, 2, 3, 4],
+        userCommentData:[],
+        page:1,
+        shop_id:'',
+    };
+    methods = {};
+
+    events = {};
+    onLoad(options) {
+        this.shop_id = options.shop_id
+        shopComments(options.shop_id,this.page).then((res)=>{
+            this.userCommentData = res.data.data.rows
+            this.$apply()
+        })
+    };
+    onReachBottom(){
+        this.page++
+        wx.showLoading({
+            title:'加载中...',
+            mask: true,
+        });
+        shopComments(this.shop_id,this.page).then((res)=>{
+            wx.hideLoading();
+            if(res.data.data.rows.length){
+                res.data.data.rows.forEach(element => {
+                    this.userCommentData.push(element)
+                    this.$apply()
+                });
+            }else{
+                wx.showToast({
+                    title: '已加载完全部数据',
+                    icon: 'none'
+                })
+            }
+        })
+    }
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <!-- 评论展示组件 -->
+        <businessReviewsImg :syncTitle.sync="userCommentData" :syncStar.sync="stars"/>
+    </view>
+</template>
+
+<style lang="less">
+</style>

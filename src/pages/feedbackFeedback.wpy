@@ -1,0 +1,78 @@
+<script>
+import wepy from 'wepy';
+import {feedback} from '../api/request'
+
+export default class feedbackFeedback extends wepy.page {
+    config = {
+        navigationBarTitleText: '意见反馈',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        btnUse:false,
+        disabled:true,
+        leng:0,
+        open_id:''
+    };
+    methods = {
+        sectionValue(e){
+            let leng = e.detail.value.length
+            this.leng = leng
+        if(leng >= 5){
+          this.disabled = false
+          this.btnUse = true
+          // console.log(e.detail.value)
+          this.commentContent = e.detail.value
+        }else{
+          this.disabled = true
+          this.btnUse = false
+        }
+      },
+      uploadComment(){
+        wx.showLoading({
+            title: '提交中...',
+            mask: true,
+        });
+        feedback(this.open_id,this.commentContent).then((res)=>{
+            wx.hideLoading();
+            wx.showToast({
+                title: res.data.message,
+                icon: 'none'
+            });
+            setTimeout(() => {
+                wx.navigateBack({
+                    delta: 1
+                });
+            }, 1500);
+        })
+      }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.open_id = options.open_id
+    };
+    
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='titleBox'>
+            <view class='titleBox_line'></view>
+            <view>意见建议</view>
+        </view>
+        <view class="section">
+            <textarea placeholder="意见留言 (请至少输入五个字)" placeholder-style="color:#969696;font-size:28rpx;letter-spacing:5rpx;" maxlength='100' @input = 'sectionValue' />
+        </view>
+        <view class='maxInput'>{{leng}}/100</view>
+        <button class="preservation-btn {{btnUse?'btnUse':''}}" disabled="{{disabled}}" @tap='uploadComment'>
+            提交
+        </button>
+    </view>
+</template>
+
+<style lang="less">
+</style>

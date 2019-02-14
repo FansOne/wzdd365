@@ -1,0 +1,65 @@
+<template lang="wxml">
+    <view wx:for='{{syncTitle}}' wx:key='' class='foodItemBox'>
+        <image src='{{item.pic_url}}'/>
+        <view class='foodItem_right'>
+            <view class='foodItem_right_title'>{{item.title}}</view>
+            <view class='foodItem_right_price'><view>×{{item.qty}}</view><view>￥ {{item.price*item.qty}}</view></view>
+        </view>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+export default class foodsItem extends wepy.component {
+    components = {};
+
+    data = {};
+    methods = {};
+
+    props = {
+        syncTitle: {
+            type: Array,
+            default: 'null'
+        }
+    };
+}
+</script>
+
+<style lang="less">
+    .foodItemBox{
+        box-sizing: border-box;
+        height: 180rpx;
+        width: 100%;
+        padding: 20rpx 30rpx;
+        display: flex;
+        align-items: center;
+        border-bottom: 1rpx solid #f1f1f1;
+        image{
+            height: 100rpx;
+            width: 100rpx;
+        }
+        .foodItem_right{
+            flex: 1;
+            padding-left: 30rpx;
+            .foodItem_right_title{
+                font-size: 24rpx;
+                margin-bottom: 15rpx;
+            }
+            .foodItem_right_price{
+                display: flex;
+                align-items: center;
+                view:nth-child(1){
+                    flex: .5;
+                    font-size: 24rpx;
+                    color: #999;
+                }
+                view:nth-child(2){
+                    flex: .5;
+                    text-align: right;
+                    font-size: 24rpx;
+                    color: #ff5a59;
+                }
+            }
+        }
+    }
+</style>

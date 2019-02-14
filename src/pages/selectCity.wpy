@@ -1,0 +1,184 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+
+export default class selectCity extends wepy.page {
+    config = {
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+        navigationBarTitleText: '切换城市',
+    };
+    components = {};
+
+    data = {
+        cityList:{},
+        city:'',
+    };
+    methods = {
+        areaItemSelect(e){
+            if(e == 'all')return
+            this.cityList.area.forEach(element => {
+                // console.log(element.id)
+                if(element.id == e){
+                    element.select = true
+                    wx.setStorage({
+                        key: 'selectCity',
+                        data: element.title,
+                        success: ()=>{
+                            wx.showLoading({
+                                title: '切换中...',
+                                mask: true,
+                            });
+                            setTimeout(() => {
+                                wx.navigateBack({
+                                    delta: 1
+                                });
+                            }, 400);
+                        }
+                    });
+                }else{
+                    element.select = false
+                }
+            });
+        },
+        addressCity(){
+            wx.setStorage({
+                key: 'selectCity',
+                data: this.city,
+                success: ()=>{
+                    wx.showLoading({
+                        title: '切换中...',
+                        mask: true,
+                    });
+                    setTimeout(() => {
+                        wx.navigateBack({
+                            delta: 1
+                        });
+                    }, 400);
+                }
+            });
+        },
+        hotSelect(e){
+            this.cityList.hot.forEach(element => {
+                // console.log(element.id)
+                if(element.id == e){
+                    element.select = true
+                    wx.setStorage({
+                        key: 'selectCity',
+                        data: element.title,
+                        success: ()=>{
+                            wx.showLoading({
+                                title: '切换中...',
+                                mask: true,
+                            });
+                            setTimeout(() => {
+                                wx.navigateBack({
+                                    delta: 1
+                                });
+                            }, 400);
+                        }
+                    });
+                }else{
+                    element.select = false
+                }
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.city = options.city
+        this.getCityList()
+        wx.getStorage({
+            key: 'selectCity',
+            success: res => {
+                this.city = res.data
+            }
+        });
+    };
+    //获取城市列表
+    async getCityList(){
+        wx.getLocation({
+            type: 'wgs84',
+            success: (res)=> {
+                const url = api.apiMall + '/city';
+                wepy.request({
+                    url: url,
+                    method: 'GET'
+                }).then((res)=>{
+                    // console.log(res.data.data.area)
+                    res.data.data.area.unshift({id:'all',title:'全城'})
+                    res.data.data.area[0].select = true
+                    this.cityList = res.data.data
+                    this.$apply()
+                })
+            }
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <!-- 标题 -->
+        <view class='titleBox'>
+            <view class='titleBox_line'></view>
+            <view>当前：全城</view>
+        </view>
+        <view class='areaBox'>
+            <view wx:for='{{cityList.area}}' wx:key="" class='areaItem'>
+                <view class="areaItem_ {{item.select?'areaItem_select':''}}" @tap='areaItemSelect({{item.id}})'>{{item.title}}</view>
+            </view>
+        </view>
+        <!-- 标题 -->
+        <view class='titleBox'>
+            <view class='titleBox_line'></view>
+            <view>定位 / 最近访问</view>
+        </view>
+        <view class='cityAddress'>
+            <view class='areaItem'>
+                <view class='areaItem_' @tap='addressCity'><icon class='iconfont icon-icon-test' style='transform:translateY(-8rpx);'/><view>{{city}}</view></view>
+            </view>
+        </view>
+        <!-- 标题 -->
+        <view class='titleBox'>
+            <view class='titleBox_line'></view>
+            <view>热门城市</view>
+        </view>
+        <view class='areaBox'>
+            <view wx:for='{{cityList.hot}}' wx:key="" class='areaItem'>
+                <view class="areaItem_ {{item.select?'areaItem_select':''}}" @tap='hotSelect({{item.id}})'>{{item.title}}</view>
+            </view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .cityAddress{
+        box-sizing: border-box;
+        padding: 20rpx 30rpx;
+        .areaItem{
+            .areaItem_{
+                width: 150rpx;
+                height: 48rpx;
+                line-height: 48rpx;
+                background-color: #fafafa;
+                font-size: 24rpx;
+                color: #6f6f6f;
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                icon{
+                    transform: translateY(-2rpx);
+                    font-size: 24rpx;
+                    margin-right: 4rpx;
+                }
+            }
+        }
+    }
+    .areaItem_select{
+        color: #fff !important;
+        background-color: #ff9e6e !important;
+    }
+</style>

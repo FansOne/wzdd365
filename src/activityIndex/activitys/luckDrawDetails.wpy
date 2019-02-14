@@ -1,0 +1,175 @@
+<script>
+import wepy from 'wepy';
+import api from '../../api/api';
+import token from '../../api/getToken';
+
+export default class luckDrawDetails extends wepy.page {
+    config = {
+        navigationBarTitleText: '抽奖详情',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        imgUrls: [],
+        allData:{},
+        summary:'',
+        selectBuy:[],
+    };
+    methods = {
+    };
+    goConfirm(e){
+        let iv = e.detail.iv;
+        let encryptedData = e.detail.encryptedData;
+        wx.showLoading({title: 'Loading...',mask: true});
+        wx.getStorage({
+            key: 'openId&token',
+            success: res => {
+                let open_id = res.data.open_id;
+                wx.setStorage({
+                    key: 'selectBuy',
+                    data: this.allData,
+                    success: ()=>{
+                        wx.hideLoading();
+                        wx.navigateTo({
+                            url: './luckDrawCofirm?open_id='+open_id+'&shop_id='+this.allData.id
+                        });
+                    }
+                });
+            },
+            fail:()=>{
+                token(iv, encryptedData).then((res)=>{
+                    wx.setStorageSync('openId&token',res.data.data);
+                    wx.setStorage({
+                        key: 'userInfo',
+                        data: e.detail.userInfo
+                    })
+                    let open_id = res.data.data.open_id;
+                    wx.setStorage({
+                        key: 'selectBuy',
+                        data: this.allData,
+                        success: ()=>{
+                            wx.hideLoading();
+                            wx.navigateTo({
+                                url: './luckDrawCofirm?open_id='+open_id+'&shop_id='+this.allData.id
+                            });
+                        }
+                    });
+                })
+            }
+        });
+    }
+    events = {};
+    onLoad(options) {
+        this.killDetails(options.lottery_id)
+    };
+    // 获取抽奖详情
+    async killDetails(lottery_id){
+        const url = api.apiMall + '/lottery/detail';
+        const data = {
+            lottery_id:lottery_id,
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data:data
+        }).then((res)=>{
+            this.imgUrls.push(res.data.data.pic_url)
+            this.selectBuy = res.data.data
+            this.allData = res.data.data
+            this.summary = res.data.data.summary
+            this.$apply()
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <swiper indicator-dots autoplay interval="4000" circular style='height:300rpx;'>
+            <block wx:for="{{imgUrls}}" wx:key=''>
+                <swiper-item>
+                    <image src="{{item}}" style='height:300rpx;'/>
+                </swiper-item>
+            </block>
+        </swiper>
+        <view class='killTime_box'>
+            <view class='killTime_left'>
+                <view class='killTime_name'>{{allData.title}}</view>
+                <view class='killTime_price'>{{allData.gold}}积分</view>
+            </view>
+            <view class='killTime_right'>
+                <view style='font-size:24rpx;color:#666'>已参与<text style='color:#ff9e6e'>{{allData.joins}}</text>人，开奖还需<text style='color:#ff9e6e'>{{allData.people-allData.joins}}</text>人</view>
+            </view>
+        </view>
+        <view class='progress_box'>
+            <progress percent="{{allData.joins/allData.people*100}}" activeColor='#ff9e6e' backgroundColor='#efefef' active stroke-width="12"/>
+        </view>
+        <view class='killTime_box'>
+            <view class='killTime_left'>
+                <view class='killTime_left_line'></view>
+                <view style='font-size:24rpx;color:#666;'>商品详情</view>
+            </view>
+            <view class='killTime_right'>
+                <view style='font-size:24rpx;color:#666'>由<text style='color:#ff9e6e'>{{allData.shop_title}}</text>提供</view>
+            </view>
+        </view>
+        <rich-text nodes="{{summary}}" mode='widthFix'></rich-text>
+        <!-- 底部结算 -->
+        <view class='SettlementBox'>
+            <view class='SettlementBox_left'>
+                <view>{{allData.gold}}积分</view>
+            </view>
+            <button open-type='getUserInfo' bindgetuserinfo='goConfirm'>立即参与</button>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .killTime_box{
+        display: flex;
+        align-items: center;
+        height: 65rpx;
+        background-color: #fafafa;
+        border-bottom: 1px solid #f1f1f1;
+        box-sizing: border-box;
+        padding: 20rpx 30rpx;
+        .killTime_left{
+            flex: .5;
+            display: flex;
+            align-items: center;
+            .killTime_name{
+                font-size: 30rpx;
+                color: #000;
+            }
+            .killTime_price{
+                margin-left: 15rpx;
+                height: 32rpx;
+                width: 100rpx;
+                background-color: #ff9e6e;
+                font-size: 18rpx;
+                color: #fff;
+                line-height: 32rpx;
+                text-align: center;
+                border-radius: 7rpx;
+            }
+            .killTime_left_line{
+                margin-right: 15rpx;
+                width: 5rpx;
+                height: 33rpx;
+                background-color: #ff9e6e;
+            }
+        }
+        .killTime_right{
+            flex: .5;
+            display: flex;
+            justify-content: flex-end;
+            .killTime_right_time{
+                display: flex;
+                color: #666;
+                font-size: 24rpx;
+            }
+        }
+    }
+</style>

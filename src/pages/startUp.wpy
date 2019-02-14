@@ -1,0 +1,127 @@
+<script>
+import wepy from 'wepy';
+
+export default class startUp extends wepy.page {
+    config = {
+        navigationBarBackgroundColor: '#e75b53',
+        navigationBarTextStyle: '#fff',
+        disableScroll: true
+    };
+
+    data = {
+        timer:5,
+        //定时器
+        countDown:'',
+    };
+    methods = {
+        goTabBar(){
+            clearInterval(this.countDown)
+            wx.switchTab({
+                url: './index'
+            });
+        }
+    };
+
+    events = {};
+    onLoad() {
+        wx.getStorage({
+            key: 'alreadyOpen',
+            success: res => {
+                wx.switchTab({
+                    url: './index'
+                });
+            },
+            fail: ()=>{
+                this.countDown = setInterval(()=>{
+                    this.timer = this.timer-1
+                    this.$apply()
+                    if(this.timer == 0){
+                        clearInterval(this.countDown)
+                        wx.setStorage({
+                            key: 'alreadyOpen',
+                            data: 'yes',
+                            success:()=>{
+                                wx.switchTab({
+                                    url: './index'
+                                });
+                            }
+                        });
+                    }
+                },1000)
+            }
+        });
+    };
+    onUnload(){
+        clearInterval(this.countDown)
+    }
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='bg'></view>
+        <!-- 倒计时 -->
+        <view class='timer'>{{timer}}s后跳过</view>
+        <!-- 图标 -->
+        <image src='https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E5%90%AF%E5%8A%A8%E9%A1%B5%E9%A3%8E%E8%BD%A6.png' class='icon_'/>
+        <!-- 立即体验 -->
+        <button @tap='goTabBar' type='warn'>立即体验</button>
+    </view>
+</template>
+
+<style lang="less">
+    .bg{
+        box-sizing: border-box;
+        height: 1065rpx;
+        width: 100%;
+        background-image: url('https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E5%90%AF%E5%8A%A8%E9%A1%B52.png');
+        background-size: 100%;
+    }
+    .timer{
+        position: absolute;
+        right: 35rpx;
+        top: 50rpx;
+        background-color: #fff;
+        width: 150rpx;
+        height: 48rpx;
+        border-radius: 7rpx;
+        font-size: 24rpx;
+        color: #e75b53;
+        line-height: 48rpx;
+        text-align: center;
+    }
+    .icon_{
+        width: 150rpx;
+        height: 150rpx;
+        border-radius: 10rpx;
+        position: absolute;
+        left: 0;
+        right: 0;
+        margin: auto;
+        top: 210rpx;
+    }
+    .bagIcon{
+        position: absolute;
+        left: 0;
+        right: 0;
+        top:400rpx;
+        margin: auto;
+        width: 640rpx;
+        height: 425rpx;
+    }
+    button{
+        width: 280rpx;
+        height: 66rpx;
+        position: absolute;
+        left: 0;
+        right: 0;
+        margin: auto;
+        top: 1090rpx;
+        font-size: 30rpx;
+        line-height: 66rpx;
+        color: #fff;
+        background-color: #f05c55;
+        box-shadow: 0 0 10rpx #e75b53;
+    }
+</style>

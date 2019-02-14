@@ -1,0 +1,82 @@
+<script>
+import wepy from 'wepy';
+import foodsItem from '../../components/foodsItem';
+import util from '../../api/time'
+
+export default class dianCanPaySuccess extends wepy.page {
+    config = {
+        navigationBarTitleText: '支付成功',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {
+        foodsItem:foodsItem
+    };
+
+    data = {
+        foodsItem:[],
+        options:{},
+        time:'',
+    };
+    methods = {
+        killLists(){
+            wx.navigateBack({
+                delta: 2
+            });
+        },
+        applicationRefund(){
+            wx.navigateTo({
+                url: './applicationRefund?order_id='+this.options.order_id
+            });
+        },
+        evaluate(){
+            wx.navigateTo({
+                url: './evaluate?order_id='+this.options.order_id
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.time = util.formatTime(new Date());
+        this.options = options
+        wx.getStorage({
+            key: 'selectOrderGoods',
+            success: res => {
+                this.foodsItem = res.data
+                this.$apply()
+            }
+        });
+    };
+    onUnload(){
+        wx.removeStorage({
+            key: 'selectOrderGoods'
+        });
+    }
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='topBox'>
+            <icon type="success" size="25" color='#ff9e6e'/>
+            <view class='title'>支付成功</view>
+            <view class='doubleBtn'>
+                <view @tap='applicationRefund'>申请退款</view>
+                <view @tap='evaluate'>评价</view>
+                <view @tap='killLists'>再来一单</view>
+            </view>
+        </view>
+        <!-- 订单商品组件 -->
+        <foodsItem :syncTitle.sync="foodsItem"/>
+        <view class='messList'>支付总额<view>￥{{options.payTotal}}</view></view>
+        <view class='messList'>订单编号：{{options.orderId}}</view>
+        <view class='messList'>下单时间：{{time}}</view>
+        <view class='messList'>支付方式：{{options.pay_type == 0?'钱包支付':'微信支付'}}</view>
+    </view>
+</template>
+
+<style lang="less">
+/** less **/
+</style>

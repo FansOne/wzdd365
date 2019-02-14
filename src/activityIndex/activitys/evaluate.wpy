@@ -1,0 +1,154 @@
+<script>
+let arr = [];
+let pics = [];
+import wepy from 'wepy';
+import commentStar from '../../components/commentStar'
+import { infoPublish,orderRate } from '../../api/request'
+
+export default class evaluate extends wepy.page {
+    config = {
+        navigationBarTitleText: '订单评价',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {
+        commentStar:commentStar
+    };
+
+    data = {
+        leng:0,
+        // 用户上传图片
+        tempFilePaths:[],
+        count:3,
+        SurplusUploadNum:'',
+        shopMessage: {},
+        open_id:'',
+        order_id:''
+    };
+    methods = {
+        sectionValue(e){
+            let leng = e.detail.value.length
+            this.leng = leng
+        },
+        chooseImage(){
+            this.count =  3 - this.tempFilePaths.length
+            this.$apply()
+            if(this.tempFilePaths.length < 3){
+                wx.chooseImage({
+                    count: this.count,
+                    sizeType: ['original', 'compressed'],
+                    sourceType: ['album', 'camera'],
+                    success: (res)=> {
+                        pics = []
+                        arr = arr.concat(res.tempFilePaths)
+                        this.tempFilePaths = arr
+                        this.SurplusUploadNum = this.count-1
+                        this.$apply()
+                        this.tempFilePaths.forEach(element => {
+                            wx.uploadFile({
+                                url:'https://wzdd365.api.huanyuzhike.com/upload',
+                                filePath: element,
+                                name: 'file',
+                                success:  (res)=> {
+                                  pics.push(JSON.parse(res.data).data[1])
+                                }
+                            })
+                        });
+                    }
+                })
+            }else{
+                wx.showToast({
+                    title: '已达到上传上限！',
+                    icon: 'none'
+                });
+            }
+        }
+    };
+    onUnload(){
+        arr = [];
+        pics = [];
+    }
+    onLoad(options) {
+        this.order_id = options.order_id
+        wx.getStorage({
+            key: 'openId&token',
+            success: res => {
+                this.open_id  = res.data.open_id
+                this.$apply()
+            }
+        });
+        this.shopMessage = wepy.$instance.globalData.shopDetails
+    };
+    // 提交申请
+    formSubmit(e){
+        console.log(e.detail.value.textarea)
+        console.log(wepy.$instance.globalData.score) //用户评分
+        orderRate(this.open_id,this.shopMessage.shop_id,this.order_id,wepy.$instance.globalData.score,e.detail.value.textarea,pics).then((res)=>{
+            if(res.data.status == 'ok'){
+                wx.redirectTo({
+                    url: './commentSuccess'
+                });
+            }else{
+                wx.showToast({
+                    title: '评价失败:'+res.data.message,
+                    icon: 'none',
+                    duration: 1500,
+                    mask: false,
+                });
+            }
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <form @submit="formSubmit">
+            <view class='topLogo_Start'>
+                <image src='{{shopMessage.pic_url || shopMessage.logo_url}}' class='logo'/>
+                <view class='title'>{{shopMessage.title}}</view>
+            </view>
+            <!-- 星星组件 -->
+            <commentStar/>
+            <!-- textarea -->
+            <view class="section" style='margin-top:95rpx;background-color:#fafafa;'>
+                <textarea placeholder="对本店服务还满意吗?" name='textarea' placeholder-style="color:#ccc;font-size:24rpx;letter-spacing:5rpx;" maxlength='100' @input = 'sectionValue' />
+            </view>
+            <view class='maxInput' style='transform:translateY(-50rpx);font-size:24rpx;'>{{leng}}/100字</view>
+            <!-- 上传照片 -->
+            <view class='chooseImageBox'>
+                <view class='creamBg' @tap='chooseImage'><icon class='iconfont icon-xiangji'/></view>
+                <view class='chooseImagePrompt'><view>上传照片</view><view>内容丰富的评价有机会获得积分奖励哦</view></view>
+            </view>
+            <view class='userSelectImgbox'>
+                <view wx:for='{{tempFilePaths}}' wx:key='' class='userSelectImg_item'>
+                    <image src='{{item}}'/>
+                </view>
+            </view>
+            <button class="preservation-btn btnUse"  formType="submit">
+                提交申请
+            </button>
+        </form>
+    </view>
+</template>
+
+<style lang="less">
+    .topLogo_Start{
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin-top: 30rpx;
+        .logo{
+            width: 120rpx;
+            height: 120rpx;
+            border-radius: 10rpx;
+            border: 1rpx solid #f1f1f1;
+        }
+        .title{
+            margin-top: 20rpx;
+            font-size: 30rpx;
+        }
+    }
+</style>

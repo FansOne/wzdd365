@@ -1,0 +1,235 @@
+<script>
+import wepy from 'wepy';
+import Wheel from '../../api/wheel';
+import api from '../../api/api';
+import { bonus,bonusBingo,appSetting } from '../../api/request'
+
+let funa;
+
+export default class circleDrawLottery extends wepy.page {
+    config = {
+        navigationBarTitleText: '幸运抽奖',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#f45349',
+        disableScroll: true
+    };
+    components = {};
+
+    data = {
+      msgList:[],
+      mode:2,
+      deg:0,
+      wheel:{},
+      singleAngle:'',
+      allData:{},
+      message:'',
+      bonus_gold:'',
+      balance:0,
+    };
+    methods = {
+      start(){
+        wx.getStorage({
+            key: 'openId&token',
+            success: res => {
+                if(res.data.open_id){
+                    bonusBingo(res.data.open_id).then(res=>{
+                        if(res.data.status == 'ok'){
+                            this.allData = res.data.data
+                            this.message = res.data.message
+                            this.$apply()
+                            funa.awardNumer = res.data.data.circle_number //中奖区域从1开始
+                            funa.start();
+                            wx.getStorage({
+                                key: 'openId&token',
+                                success: res => {
+                                    this.userGold(res.data.open_id)
+                                }
+                            });
+                        }else if(res.data.status == 'fail'){
+                            funa.awardNumer = res.data.data.circle_number //中奖区域从1开始
+                            funa.start();
+                            wx.getStorage({
+                                key: 'openId&token',
+                                success: res => {
+                                    this.userGold(res.data.open_id)
+                                }
+                            });
+                            setTimeout(function(){
+                                wx.showToast({
+                                    title: res.data.message,
+                                    icon: 'none',
+                                    duration: 1500,
+                                    mask: false,
+                                })
+                            },3000);
+                        }
+                    })
+                }else{
+                    wx.showToast({
+                        title: '请先进行微信授权登录',
+                        icon: 'none',
+                        duration: 1500,
+                        mask: false,
+                    });
+                }
+            },
+            fail:()=>{
+                wx.showToast({
+                    title: '请先进行微信授权登录',
+                    icon: 'none',
+                    duration: 1500,
+                    mask: false,
+                });
+            }
+        });
+      }
+    };
+
+    events = {};
+    onLoad() {
+        // 获取大转盘奖池
+        bonus().then(res=>{
+            this.msgList = res.data.data.bingos
+            this.$apply()
+        })
+        appSetting().then((res)=>{
+            this.bonus_gold = res.data.data.bonus_gold
+            this.$apply()
+        })
+        wx.getStorage({
+            key: 'openId&token',
+            success: res => {
+                this.userGold(res.data.open_id)
+            }
+        });
+        funa  = new Wheel(this, {
+            areaNumber: 10, // 奖区数量
+            speed: 16,
+            mode: 2,    //1是指针旋转，2为转盘旋转
+            callback: () => {
+                if(this.allData.is_bingo == 1){
+                    wx.showModal({
+                        title: '恭喜中奖',
+                        content: this.message,
+                        showCancel: false,
+                        mask:true,
+                        success: res => {
+                            // funa.reset()
+                            wepy.$instance.globalData.allData_ZJ = this.allData
+                            if (res.confirm) {
+                                wx.redirectTo({
+                                    url: './circleDrawZJ'
+                                });
+                            }
+                        }
+                    })
+                }else{
+                    wx.showToast({
+                        title: '感谢参与',
+                        icon: 'none',
+                        duration: 1600,
+                        mask: false,
+                    });
+                }
+            }
+        })
+    };
+    // 金豆信息
+    userGold(open_id){
+        wepy.request({
+            url: api.apiMall + '/user/gold',
+            method: 'GET',
+            data: {
+                open_id: open_id,
+                page: 1
+            }
+        }).then((res)=>{
+            this.balance = res.data.data.balance
+            this.$apply()
+        });
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+      <swiper class="swiper_container" vertical autoplay circular interval="3000">
+          <block wx:for="{{msgList}}" wx:key=''>
+              <swiper-item>
+                  <view class="swiper_item">恭喜：{{item.nickname}}获得价值￥{{item.price}}{{item.title}}</view>
+              </swiper-item>
+          </block>
+      </swiper>
+        <view class="wheel_wp">
+          <block wx:if = "{{mode == 2}}">
+            <image src = "https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/dial_bg.png" style="-webkit-transform:rotate({{deg}}deg) translateZ(0);transform:rotate({{deg}}deg) translateZ(0)"/>
+            <view class="wheel_pointer" bindtap="start"><image src = "https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/dial_pointer.png" /></view>		
+          </block>
+        </view>
+        <!-- 用户抽奖次数 -->
+        <view class='startNums'>剩余金豆{{balance}}个，每次参与需要{{bonus_gold}}个</view>
+    </view>
+</template>
+
+<style lang="less">
+    page{
+        background-image: url('https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E5%B9%B8%E8%BF%90%E8%BD%AC%E7%9B%98BG.png');
+        background-size: 100%;
+        background-repeat: no-repeat;
+        background-color: #f45349;
+    }
+    .swiper_container {
+        position: absolute; 
+        left: 0;
+        right: 0;
+        top: -80rpx;
+        margin: auto;
+        width: 505rpx;
+        height: 58rpx;
+        background-color: #ffe964;
+        border-radius: 30rpx;
+        box-shadow: 0 0 10rpx gray;
+    }
+    .swiper_item {
+        line-height: 58rpx;
+        text-align: center;
+        color: #333;
+        font-size: 24rpx;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .wheel_wp{
+      width: 640rpx;
+      height: 640rpx;
+      position: relative;
+      margin: 0 auto;
+      margin-top: 356rpx;
+    }
+    .wheel_wp image{
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .wheel_wp .wheel_pointer{
+      position: absolute;
+      width: 191rpx;
+      height: 218rpx;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      margin: auto;
+    }
+    .wheel_wp .wheel_pointer image{
+      width: 191rpx;
+      height: 218rpx;
+    }
+    .startNums{
+      text-align: center;
+      font-size: 30rpx;
+      width: 100%;
+      color: #ffe964;
+      margin-top: 63rpx;
+    }
+</style>

@@ -1,0 +1,964 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api';
+import indexGoods from '../components/indexGoods';
+import token from '../api/getToken';
+
+export default class index extends wepy.page {
+    config = {
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+        enablePullDownRefresh:true,
+        backgroundTextStyle:'dark',
+        onReachBottomDistance:70,
+    };
+    components = {
+        indexGoods:indexGoods
+    };
+    data = {
+        circleShow:0,
+        imgUrls: [],
+        iconClass:[],
+        //商家活动
+        businessActivities:[
+            {
+                title:'秒杀',
+                cover:'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E7%A7%92%E6%9D%80.png',
+                icon:'icon-miaosha',
+                bgImg:'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/huodongbg1.png'
+            },
+            {
+                title:'拼团',
+                cover:'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%8B%BC%E5%9B%A2.png',
+                icon:'icon-gengduopintuan',
+                bgImg:'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/huodongbg2.png'
+            },
+            {
+                title:'抽奖',
+                cover:'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%8A%BD%E5%A5%96.png',
+                icon:'icon-choujiang',
+                bgImg:'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/huodongbg3.png'
+            },
+            {
+                title:'团购',
+                cover:'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%B4%BB%E5%8A%A8.png',
+                icon:'icon-icon',
+                bgImg:'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/huodongbg4.png'
+            }           
+        ],
+        //推荐店铺
+        indexGoods:[],
+        stars: [0, 1, 2, 3, 4],
+        Mask:false,
+        signInData:[
+            {
+                day:'第1天',
+                mumber:'10',
+                explain:'金豆'
+            },
+            {
+                day:'第2天',
+                mumber:'20',
+                explain:'金豆'
+            },
+            {
+                day:'第3天',
+                mumber:'1元',
+                explain:'可补签'
+            },
+            {
+                day:'第4天',
+                mumber:'1元',
+                explain:'可补签'
+            },
+            {
+                day:'第5天',
+                mumber:'1元',
+                explain:'可补签'
+            },
+            {
+                day:'第6天',
+                mumber:'60',
+                explain:'金豆'
+            },
+            {
+                day:'第7天',
+                mumber:'70',
+                explain:'金豆'
+            },
+            {
+                day:'连续签到',
+                mumber:'100',
+                explain:'金豆'
+            },
+        ],
+        punchCheck:{},
+        weather:{},
+        pageShow:false,
+        hidddenShare:true,
+        page:1,
+        localLng:'',
+        localLat:'',
+        areadyNoData: true,
+        fourShow:true,
+        fourImgs:[
+            'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/timg11.jpeg',
+            'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/timg11.jpeg',
+            'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/timg11.jpeg',
+            'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/timg11.jpeg'
+        ],
+        windowHeight:0,
+        open_id:'',
+        new_user:'',
+    };
+    methods = {
+        startSearch:(e)=>{
+            wx.navigateTo({
+                url:'./indexSearch'
+            })
+        },
+        bottomShow:()=>{
+            this.Mask = !this.Mask
+        },
+        goIndustry:(e)=>{
+            if(e.id == 6){
+                wx.navigateTo({
+                    url: '../activityIndex/activitys/travelMap'
+                });
+            }else if(e.id == 8){
+                wx.navigateTo({
+                    url: '../activityIndex/activitys/life'
+                });
+            }else if(e.id == 10){
+                wx.navigateTo({
+                    url: '../activityIndex/activitys/indexIconMore'
+                });
+            }else{
+                wx.navigateTo({
+                    url: './industry?industry_id='+e.id+'&title='+e.title,
+                });
+            }
+            
+        },
+        goSecondKill:(e)=>{
+            if(e == '秒杀'){
+                wx.navigateTo({
+                    url: './secondKill',
+                });
+            }else if(e == '拼团'){
+                wx.navigateTo({
+                    url: './collageIndex',
+                });
+            }else if(e == '抽奖'){
+                wx.navigateTo({
+                    url: '../activityIndex/activitys/circleDrawLottery',
+                });
+            }else{
+                wx.navigateTo({
+                    url: './groupPurchase',
+                });
+            }
+        },
+        goCity(){
+            wx.navigateTo({
+                url: './selectCity?city='+this.weather.parent,
+            });
+        },
+        userPunch(e){
+            let iv = e.detail.iv;
+            let encryptedData = e.detail.encryptedData;
+            wx.getStorage({
+                key: 'openId&token',
+                success: res => {
+                    this.new_user = res.data.new_user
+                    this.open_id = res.data.open_id
+                    this.$apply()
+                    if(res.data.signed == 1){
+                        this.Mask = true
+                        this.$apply()
+                    }else{
+                        this.Mask = false
+                        this.$apply()
+                    }
+                    if(res.data.shared == 1){
+                        this.hidddenShare = true
+                        this.$apply()
+                    }else{
+                        this.hidddenShare = false
+                        this.$apply()
+                    }
+                    if(res.data.signed !== 1){
+                        this.punch_check(res.data.open_id)
+                        wepy.request({
+                            url: api.apiMall + '/user/punch',
+                            method: 'POST',
+                            data: {
+                                open_id: res.data.open_id
+                            }
+                        }).then((result)=>{
+                            res.data.signed = 1
+                            wx.setStorageSync('openId&token',res.data.data);
+                            wx.showToast({
+                                icon: 'none',
+                                title: result.data.message
+                            });
+                            setTimeout(() => {
+                                this.Mask = true
+                                this.$apply()
+                            }, 700);
+                        });
+                    }
+                },
+                fail:()=>{
+                    token(iv, encryptedData).then((res)=>{
+                        wx.setStorage({
+                            key: 'userInfo',
+                            data: e.detail.userInfo
+                        })
+                        this.new_user = res.data.data.new_user
+                        this.open_id = res.data.data.open_id
+                        this.hidddenShare = false
+                        this.$apply()
+                        if(res.data.data.signed == 1){
+                            this.Mask = true
+                            this.$apply()
+                        }else{
+                            this.Mask = false
+                            this.$apply()
+                        }
+                        if(res.data.data.shared == 1){
+                            this.hidddenShare = true
+                            this.$apply()
+                        }else{
+                            this.hidddenShare = false
+                            this.$apply()
+                        }
+                        this.punch_check(res.data.data.open_id)
+                        wepy.request({
+                            url: api.apiMall + '/user/punch',
+                            method: 'POST',
+                            data: {
+                                open_id: res.data.data.open_id,
+                            }
+                        }).then((result)=>{
+                            res.data.data.signed = 1
+                            wx.setStorageSync('openId&token',res.data.data);
+                            wx.showToast({
+                                icon: 'none',
+                                title: result.data.message
+                            });
+                            setTimeout(() => {
+                                this.Mask = true
+                                this.$apply()
+                            }, 700);
+                        });
+                    })
+                }
+            });
+        },
+        navigate_to(path){
+            let navigatePath = path.indexOf('https');
+            if(navigatePath == -1){
+                wx.navigateTo({
+                    url: path
+                })
+            }else{
+                wx.navigateTo({
+                    url: '../activityIndex/activitys/webView?src='+path
+                })
+            }
+        },
+        phoneLogin(){
+            wx.navigateTo({
+                url: './phoneLogin'
+            })
+        }
+    };
+    //下拉刷新
+    onPullDownRefresh(){
+        wx.showNavigationBarLoading()
+        this.pageShow = true
+        this.$apply()
+        this.ad()
+        this.ad7()
+        this.getIndustry()
+        wx.getStorage({
+            key: 'selectCity',
+            success: res => {
+                this.merchantCity(res.data)
+            },
+            fail: ()=>{
+                this.getWeather()
+            }
+        });
+    }
+    //触底加载
+    onReachBottom(res){
+        this.fourShow = !this.fourShow
+        wx.showLoading({
+            title: '加载中...',
+            mask: true,
+        });
+        this.page = this.page+1
+        this.$apply()
+        wx.getStorage({
+            key: 'selectCity',
+            success: res => {
+                this.merchantCity(res.data)
+            },
+            fail: () => {
+                this.merchantGeo()
+            }
+        });
+    }
+    onLoad(){
+        wx.getSystemInfo({
+            success:(res)=>{
+                this.windowHeight = res.windowHeight
+                this.$apply()
+            }
+        })
+    }
+    onShow() {   
+        wx.getStorage({
+            key: 'selectCity',
+            success: res => {
+                this.indexGoods = []
+                this.$apply()
+                this.getIndustry()
+                this.merchantCity(res.data)
+                this.ad()
+                this.ad7()
+            },
+            fail: () => {
+                this.ad()
+                this.ad7()
+                this.getWeather()
+                this.getIndustry()
+            }
+        });
+        wx.getStorage({
+            key: 'openId&token',
+            success: res => {
+                this.punch_check(res.data.open_id)
+                if(res.data.signed == 1){
+                    this.Mask = true
+                    this.$apply()
+                }else{
+                    this.Mask = false
+                    this.$apply()
+                }
+                if(res.data.shared == 1){
+                    this.hidddenShare = true
+                    this.$apply()
+                }else{
+                    this.hidddenShare = false
+                    this.$apply()
+                }
+                this.new_user = res.data.new_user
+                this.$apply()
+            },
+            fail:()=>{
+                this.Mask = false
+                this.$apply()
+            }
+        });
+    };
+    // 会员签到周期状态
+    punch_check(open_id){
+        wepy.request({
+            url: api.apiMall+'/user/punch_check',
+            method: 'GET',
+            data: {
+                open_id: open_id
+            }
+        }).then((res)=>{
+            this.punchCheck = res.data.data
+            this.$apply()
+        });
+    }
+    //获取用户位置天气
+    async getWeather(){
+        wx.getLocation({
+            type: 'wgs84',
+            success: (res)=> {
+                wx.setStorage({
+                    key: 'localWhere',
+                    data: {
+                        lng: res.longitude,
+                        lat: res.latitude
+                    }
+                });
+                const url = api.apiMall + '/weather';
+                const data = {
+                    location: res.longitude+','+res.latitude
+                };
+                this.localLng = res.longitude
+                this.localLat = res.latitude
+                this.$apply()
+                this.merchantGeo()
+                wepy.request({
+                    url: url,
+                    method: 'GET',
+                    data: data,
+                }).then((res)=>{
+                    wx.stopPullDownRefresh()
+                    this.pageShow = false
+                    this.weather = res.data.data
+                    this.$apply()
+                }).catch(()=>{
+                    wx.showToast({
+                    title: '网络异常，请重试',
+                    icon: 'none',
+                    duration: 2000
+                    })
+                })
+            },
+            fail:()=>{
+                wx.openSetting({
+                    success: () => {
+                        wx.getLocation({
+                            type: 'wgs84',
+                            success: (res)=> {
+                                wepy.$instance.globalData.longitude = res.longitude
+                                wepy.$instance.globalData.latitude = res.latitude
+                                const url = api.apiMall + '/weather';
+                                const data = {
+                                    location: res.longitude+','+res.latitude
+                                };
+                                wepy.request({
+                                    url: url,
+                                    method: 'GET',
+                                    data: data,
+                                }).then((res)=>{
+                                    this.weather = res.data.data
+                                    this.$apply()
+                                }).catch(()=>{
+                                    wx.showToast({
+                                        title: '网络异常，请重试',
+                                        icon: 'none',
+                                        duration: 2000
+                                    })
+                                })
+                            }
+                        })
+                    }
+                });
+            }
+        })
+    };
+    //根据频道获取广告轮播
+    async ad(){
+        const url = api.apiMall + '/ad';
+        const data = {
+            channel_id: 1,
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data: data,
+        }).then((res)=>{
+            wx.stopPullDownRefresh()
+            this.pageShow = false
+            this.imgUrls = res.data.data
+            this.$apply()
+            // console.log(res.data.data)
+        })
+    }
+    async ad7(){
+        const url = api.apiMall + '/ad';
+        const data = {
+            channel_id: 7,
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data: data,
+        }).then((res)=>{
+            wx.stopPullDownRefresh()
+            this.pageShow = false
+            this.fourImgs = res.data.data
+            this.$apply()
+        })
+    }
+    //获取行业列表
+    async getIndustry(){
+        const url = api.apiMall + '/industry';
+        const data = {
+            type:'0',
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data: data,
+        }).then((res)=>{
+            wx.hideNavigationBarLoading() 
+            wx.stopPullDownRefresh()
+            res.data.data.push({
+                color:"#969696",
+                icon_url:"icon-gengduo",
+                id:10,
+                path:"../activityIndex/activitys/indexIconMore",
+                title:"更多"
+            })
+            this.pageShow = false
+            this.circleShow = res.data.hidden
+            this.iconClass = res.data.data
+            this.$apply()
+        })
+    }
+    //获取商户信息
+    async merchantGeo(){
+        const url = api.apiMall + '/shop/geo';
+        const data = {
+            industry_id:0,
+            lng: this.localLng,
+            lat: this.localLat,
+            sort:0,
+            page: this.page
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data:data
+        }).then((res)=>{
+            wx.stopPullDownRefresh()
+            res.data.data.rows.forEach(element => {
+                element.minimum_charge = Number(element.minimum_charge).toFixed(2)
+                element.indexGoods = true
+            });
+            this.pageShow = false
+            if(this.page == 1){
+                this.indexGoods = res.data.data
+                this.$apply()
+            }else{
+                wx.hideLoading();
+                res.data.data.rows.forEach(element => {
+                    element.minimum_charge = Number(element.minimum_charge).toFixed(2)
+                    this.indexGoods.rows.push(element)
+                    this.$apply()
+                });
+                // console.log(res.data.data.rows)
+            }
+            if(!res.data.data.rows.length){
+                this.areadyNoData = false
+                this.$apply()
+            }
+        })
+    }
+    //根据城市获取用户信息
+    merchantCity(city){
+        wepy.request({
+            url: api.apiMall + '/weather',
+            method: 'GET',
+            data: {
+                location:city
+            },
+        }).then((res)=>{
+            wx.stopPullDownRefresh()
+            this.pageShow = false
+            this.weather = res.data.data
+            this.$apply()
+        }).catch(()=>{
+            wx.showToast({
+            title: '网络异常，请重试',
+            icon: 'none',
+            duration: 2000
+            })
+        });
+        wx.getStorage({
+            key: 'localWhere',
+            success: res => {
+                wepy.request({
+                    url: api.apiMall + '/shop/city',
+                    method: 'GET',
+                    data: {
+                        industry_id : 0,
+                        city: city,
+                        lng: res.data.lng,
+                        lat: res.data.lat,
+                        sort:0,
+                        page: this.page,
+                    }
+                }).then((res)=>{
+                    // console.log(res.data.data.rows)
+                    wx.stopPullDownRefresh()
+                    res.data.data.rows.forEach(element => {
+                        element.indexGoods = true
+                    });
+                    this.pageShow = false
+                    if(this.page == 1){
+                        this.indexGoods = res.data.data
+                        this.$apply()
+                    }else{
+                        wx.hideLoading();
+                        res.data.data.rows.forEach(element => {
+                            this.indexGoods.rows.push(element)
+                            this.$apply()
+                        });
+                    }
+                });
+            }
+        });
+    }
+    // 获取会员签到周期状态
+    async userPunchcheck(open_id){
+        const url = api.apiMall + '/user/punchcheck';
+        const data = {
+            open_id:open_id
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data:data
+        }).then((res)=>{
+            this.pageShow = false
+            this.$apply()
+        })
+    }
+    
+    onShareAppMessage(e){
+         wx.getStorage({
+            key: 'openId&token',
+            success: res => {
+                wx.request({
+                    url: api.apiMall + '/share',
+                    data : {
+                        open_id: this.open_id
+                    },
+                    header: {
+                        'Content-Type': 'application/json'
+                    },
+                    method: 'POST',
+                    success: (result)=> {
+                        if (e.from === 'button') {
+                            this.hidddenShare = true
+                            this.$apply()
+                            res.data.shared = 1
+                            wx.setStorageSync('openId&token',res.data);
+                            setTimeout(() => {
+                                wx.showToast({
+                                    title: '分享成功 +10金豆',
+                                    icon: 'none',
+                                    duration: 1500,
+                                    mask: false,
+                                });
+                            }, 1500);
+                        }
+                        return {
+                            path: '/pages/index',
+                        }
+                    }
+                })
+            }
+         })
+    }
+    onPageScroll(e){
+        if(e.scrollTop < 30){
+            this.fourShow = true
+            this.$apply()
+        }
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container' hidden='{{pageShow}}'>
+        <!-- 顶部轮播banner -->
+        <swiper indicator-dots autoplay interval="4000" circular indicator-active-color='#ff9e6e'>
+            <block wx:for="{{imgUrls}}" wx:key=''>
+                <swiper-item>
+                    <image src="{{item.pic_url}}" class="slide-image" style='height:100%' @tap='navigate_to({{item.path}})'/>
+                </swiper-item>
+            </block>
+        </swiper>
+        <!-- 搜索框 -->
+        <view class='searchBox'>
+            <view class='searchBox_left'>
+                <image wx:if='{{weather.condition_code}}' src='../images/{{weather.condition_code}}.png' style="{{weather.parent.length>2?'width:50rpx;height:55rpx;':'width:60rpx;height:66rpx;'}}" @tap='goCity'/>
+                <view class='searchBox_temperature'>
+                    <view style="{{weather.parent.length>2?'font-size:22rpx':''}}" @tap='goCity'>{{weather.temperature}}℃</view>
+                    <view style="{{weather.parent.length>2?'font-size:20rpx':''}}" @tap='goCity'>{{weather.condition}}</view>
+                </view>
+                <view class='searchBox_address' style="{{weather.parent.length>2?'font-size:19rpx':''}}" @tap='goCity'>{{weather.parent}}</view>
+            </view>
+            <input placeholder='周边好店全搜罗' placeholder-class='placeholderClass'/>
+            <view class='maskSearch' @tap='startSearch'></view>          
+        </view>
+        <!-- 行业 -->
+        <view class='iconClassBox' hidden='{{circleShow}}'>
+            <block wx:for='{{iconClass}}' wx:key=''>
+                <view class='iconClassBox_item' @tap="goIndustry({{item}})">
+                    <view class='imagebg' style='background-color:{{item.color}}'>
+                        <icon class='iconfont {{item.icon_url}}'/>
+                    </view>
+                    <view>{{item.title}}</view>
+                </view>
+            </block>
+        </view>
+        <!-- 活动 -->
+        <view class='businessActivities_box' hidden='{{circleShow}}'>
+            <scroll-view scroll-x="true">
+                <view class='businessActivities_scroll'>
+                    <view wx:for='{{businessActivities}}' wx:key='' wx:for-index="idx" wx:for-item="itemName" class='iconItemBox' @tap="goSecondKill({{itemName.title}})" style="width: 333rpx;height: 100rpx;background-image:url({{itemName.bgImg}});background-size:100%;">
+                        <view class='iconItemBox_left'>
+                            <icon class='iconfont {{itemName.icon}} iconItemBox_icon'/>
+                            <view class='iconItemBox_title'>{{itemName.title}}</view>
+                        </view>
+                        <image src="{{itemName.cover}}" class='iconItemBox_img' mode='widthFix'/>
+                    </view>
+                </view>
+            </scroll-view>
+        </view>
+        <!-- 周边好店 -->
+        <view class='peripheryShopTitle'>
+            <view class='peripheryShopTitle_contant'>
+                <view class='peripheryShopTitle_line'></view>
+                <view class='peripheryShopTitle_title'>周边好店</view>
+                <view class='peripheryShopTitle_line'></view>
+            </view>
+        </view>
+        <!-- 推荐商品组件 -->
+        <view style='padding-top:15rpx;' wx:if='{{indexGoods.rows.length}}'>
+            <indexGoods :syncTitle.sync="indexGoods" :syncStar.sync="stars"/>
+        </view>
+        <!-- 更多推荐 -->
+        <view class='getMore' wx:if='{{areadyNoData && indexGoods.rows.length}}'>更多推荐</view>
+        <view class ='getMore' wx:if='{{indexGoods.rows.length == 0}}' style='padding-top:45rpx;'>本地暂无商家店铺  ╯︿╰</view>
+        <view class='getMore' wx:else>已加载全部数据</view>
+        <!-- 分享红包 -->
+        <button class='shareRed' open-type='share' hidden='{{hidddenShare}}'>
+            <image src='https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/redpackage.png'/>
+        </button>
+        <!-- 新手礼包 -->
+        <button class='shareRed' hidden='{{new_user == 0}}' style="bottom:188rpx;" @tap='phoneLogin'>
+            <image src='https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/box.png'/>
+        </button>
+        <!-- 遮罩 -->
+        <view class='Mask' @tap='bottomShow' hidden='{{Mask}}'></view>
+        <!-- 签到 -->
+        <view class="signIn_box" hidden='{{Mask}}'>
+            <image src='https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/maskBanner.png'/>
+            <view class='signIn_bottomBox'>
+                <view wx:for='{{signInData}}' wx:key='' class='signIn_bottomBox_tiem'>
+                    <view style='margin:7rpx 0;'>{{item.day}}</view>
+                    <view class="signIn_bottomBox_tiembox {{punchCheck.weeks[index]?'aign':''}}">
+                        <view style='font-size:24rpx;'>{{item.mumber}}</view>
+                        <view>{{item.explain}}</view>
+                    </view>
+                </view>
+                <button class='signInButton' open-type='getUserInfo' @getuserinfo='userPunch'>立即签到</button>
+            </view>
+            <!-- 右上关闭 -->
+            <icon class='close iconfont icon-guanbi' @tap='bottomShow'/>
+        </view>
+        <!-- 四图 -->
+        <view class="fourImg {{fourShow?'fourImg_show':''}}">
+            <block wx:for='{{fourImgs}}' wx:key=''>
+                 <image src="{{item.pic_url}}" class="slide-image" style='height:100%' @tap='navigate_to({{item.path}})'/>
+            </block>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    swiper{
+        height: 335rpx;
+        image{
+            width: 100%;
+        }
+    }
+    .searchBox{
+        box-sizing: border-box;
+        position: absolute;
+        top: 10rpx;
+        display: flex;
+        align-items: center;
+        padding: 0 20rpx;
+        height: 80rpx;
+        width: 100%;
+        .searchBox_left{
+            display: flex;
+            align-items: center;
+            flex: .3;
+        }
+        .searchBox_temperature{
+            margin: 0 7rpx;
+            font-size: 27rpx;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .searchBox_address{
+            margin-right: 10rpx;
+            font-size: 27rpx;
+            color: #fff;
+        }
+        input{
+            border-radius: 50rpx;
+            font-size: 27rpx;
+            padding: 0 30rpx;
+            height: 65rpx;
+            line-height: 65rpx;
+            flex: .7;
+            background-color: #fff;
+        }
+    }
+    .maskSearch{
+        position:absolute;
+        height:70rpx;
+        width:535rpx;
+        top:10rpx;
+        right:0;
+        z-index:99;
+    }
+    .businessActivities_box{
+        // height: 220rpx;
+        scroll-view{
+            overflow: hidden;
+            // height: 220rpx;
+            white-space: nowrap;
+        }
+        .businessActivities_scroll{
+            height: 220rpx;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            box-sizing: border-box;
+            padding: 0 30rpx;
+            .iconItemBox{
+                box-sizing: border-box;
+                padding: 0 20rpx;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border-radius: 7rpx;
+                // background-color:#ffeabf;
+                .iconItemBox_left{
+                    display: flex;
+                    align-items: center;
+                } 
+                .iconItemBox_icon{
+                    font-size: 50rpx;
+                    color: #fff;
+                }
+                .iconItemBox_title{
+                    margin-left: 15rpx;
+                    font-size: 24rpx;
+                    color: #fff;
+                }
+                .iconItemBox_img{
+                    width: 85rpx;
+                    height: 70rpx;
+                }
+            }
+        }
+    }
+    .placeholderClass{
+        font-size: 27rpx;
+        // flex: .7;
+    }
+    .shareRed{
+        z-index: 9;
+        position: fixed;
+        right:27rpx;
+        bottom: 40rpx;
+        width: 88rpx;
+        height: 115rpx;
+        background-color: rgba(0, 0, 0, 0);
+        padding: 0;
+        image{
+           width: 88rpx;
+           height: 115rpx; 
+        }
+    }
+    .Mask{
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        background-color: rgba(0, 0, 0, .5);
+        width: 100%;
+        height: 100%;
+    }
+    .signIn_box{
+        background-color: #fff;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin: auto;
+        z-index: 11;
+        width: 465rpx;
+        height: 565rpx;
+        image{
+            height: 235rpx;
+            width: 465rpx;
+        }
+        .signIn_bottomBox{
+            width: 465rpx;
+            display: flex;
+            flex-wrap: wrap;
+            box-sizing: border-box;
+            padding: 0 30rpx;
+            .signIn_bottomBox_tiem{
+                width: 25%;
+                font-size: 18rpx;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                .signIn_bottomBox_tiembox{ 
+                    width: 89rpx;
+                    height: 78rpx;
+                    background-color: #f1eef1;
+                    border-radius: 5rpx;
+                    display: flex;
+                    justify-content: center;
+                    flex-direction: column;
+                    align-items: center;
+                    color: #989898;
+                }
+            }
+            .signInButton{
+                width: 307rpx;
+                height: 45rpx;
+                font-size: 25rpx;
+                line-height: 45rpx;
+                color: #fff;
+                background-color: #ff925e;
+                transform: translateY(25rpx);
+            }
+        }
+        .close{
+            font-size:36rpx;
+            position: absolute;
+            right: -15rpx;
+            top: -28rpx;
+        }
+    }
+    .aign{
+        background-color: #ff9e6e !important;
+        color: #fff !important;
+    }
+    .fourImg{
+        // background-color: #fff;
+        position: fixed;
+        bottom: 0;
+        z-index: 99;
+        height: 150rpx;
+        transform: translateY(150rpx);
+        transition: all .4s;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        image{
+            width: 24.5%;
+            height: 100%;
+        }
+    }
+    .fourImg_show{
+        transform: translateY(0) !important;
+    }
+</style>

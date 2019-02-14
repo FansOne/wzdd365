@@ -1,0 +1,74 @@
+<template lang="wxml">
+    <view class='itemBox' wx:for='{{syncTitle}}' wx:key='' @tap='activitys({{item.id}})'>
+        <image src='{{item.map_url}}'/>
+        <view class='itemBox_right'>
+            <view>{{item.title}}</view>
+            <view>发布时间：{{item.created_at}}</view>
+            <view><icon class='iconfont icon-hot'/>{{item.views}}人浏览</view>
+        </view>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+export default class travelMapListItem extends wepy.component {
+    components = {};
+
+    data = {};
+    methods = {
+        activitys(e){
+            wx.navigateTo({
+                url:'./scenicMap?map_id='+e
+            });
+        }
+    };
+    props = {
+        syncTitle: {
+            type: Array,
+            default: 'null'
+        }
+    }
+}
+</script>
+
+<style lang="less">
+    .itemBox{
+        display: flex;
+        box-sizing: border-box;
+        padding-bottom: 15rpx;
+        height: 145rpx;
+        border-bottom: 1px solid #f1f1f1;
+        margin-bottom: 15rpx;
+        image{
+            width: 174rpx;
+            height: 130rpx;
+        }
+        .itemBox_right{
+            flex: 1;
+            padding-left: 20rpx;
+            view:nth-child(1){
+                font-size: 24rpx;
+                color: #000;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 1;
+                overflow: hidden;
+            }
+            view:nth-child(2){
+                font-size: 18rpx;
+                color: #999;
+                margin: 15rpx 0;
+            }
+            view:nth-child(3){
+                display: flex;
+                align-items: center;
+                font-size: 18rpx;
+                color: #ccc;
+                icon{
+                    transform: translateY(-11rpx);
+                    font-size: 24rpx;
+                }
+            }
+        }
+    }
+</style>

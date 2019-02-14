@@ -1,0 +1,116 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+
+export default class collageIndex extends wepy.page {
+    config = {
+        navigationBarTitleText: '拼团',
+        // navigationBarTextStyle: '#ffffff',
+        // navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+    data = {
+        //推荐商品
+        indexGoods:[],
+        stars: [0, 1, 2, 3, 4],
+        imgUrls: [],
+    };
+    methods = {
+        goActivityDetails(id){
+            wx.navigateTo({
+                url: '../activityIndex/activitys/collageDetails?id='+id
+            });
+        },
+        navigate_to(path){
+            let navigatePath = path.indexOf('https');
+            if(navigatePath == -1){
+                wx.navigateTo({
+                    url: path
+                })
+            }else{
+                wx.navigateTo({
+                    url: '../activityIndex/activitys/webView?src='+path
+                })
+            }
+        }
+    };
+
+    events = {};
+    onLoad() {
+        this.killLists()
+        this.ad()
+    };
+    // 获取拼团列表
+    async killLists(){
+        const url = api.apiMall + '/teambuy';
+        const data = {
+            page:0,
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data:data
+        }).then((res)=>{
+            // console.log(res.data)
+            this.indexGoods = res.data.data
+            this.$apply()
+        })
+    }
+    //根据频道获取广告轮播
+    async ad(){
+        const url = api.apiMall + '/ad';
+        const data = {
+            channel_id: 4,
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data: data,
+        }).then((res)=>{
+            wx.stopPullDownRefresh()
+            this.pageShow = false
+            this.imgUrls = res.data.data
+            this.$apply()
+            // console.log(res.data.data)
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <swiper indicator-dots autoplay interval="4000" circular>
+            <block wx:for="{{imgUrls}}" wx:key=''>
+                <swiper-item>
+                    <image src="{{item.pic_url}}" class="slide-image" @tap='navigate_to({{item.path}})'/>
+                </swiper-item>
+            </block>
+        </swiper>
+        <!-- 推荐商品组件 -->
+        <view style='padding-top:20rpx;'>
+            <view wx:for='{{indexGoods.rows}}' wx:key='' class='goodItemBox' wx:for-index="idx" wx:for-item="itemName" @tap="goActivityDetails({{itemName.id}})">
+                <image src='{{itemName.pic_url}}'/>
+                <view class='goodItemBox_right'>
+                    <view class='goodItemBox_right_price'>
+                        <view class='goodItemBox_title'>{{itemName.title}}</view>
+                        <view class='commentSpec'>
+                            <block wx:for="{{stars}}" wx:key='idx' wx:for-item="items">
+                            <image class="star-image" style="width:26rpx;height:26rpx;margin-right:5rpx" src="{{itemName.rate > items ?'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F1.png' : 'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F.png'}}"/>
+                            </block>
+                        </view>
+                        <view class='goodItemBox_price'>￥ {{itemName.price}}<text>￥{{itemName.origin_price}}</text></view>
+                    </view>
+                    <view class='juLi'>
+                        {{itemName.people}}人团
+                    </view>
+                </view>
+            </view>
+        </view>
+        <view wx:if='{{indexGoods.rows.length == 0}}' class='nodata'>
+            <image src='https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/nodata.png'/>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+</style>

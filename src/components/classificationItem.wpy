@@ -1,0 +1,117 @@
+<template lang="wxml">
+    <view class='itemBox' wx:for='{{syncTitle}}' wx:key='' style='margin-top:20rpx;' @tap='lifeDetail({{item.id}})'>
+        <image src='{{item.pic_url}}'/>
+        <view class='itemBox_right'>
+            <view>
+                <view class='title'>{{item.title}}</view>
+                <view class='finished' style="{{item.finished == 0?'background-color:#ff9e6e;color:#fff':'background-color:#f3f3f3;color:#999'}}">{{item.finished == 0 ?'进行中':'已完成'}}</view>
+            </view>
+            <view>发布时间：{{item.created_at}}</view>
+            <view style='height:60rpx;'><view>{{item.nickname}}</view><view><icon class='iconfont icon-hot'/>{{item.views}}人浏览</view></view>
+        </view>
+    </view>
+    <view class='noOrders' wx:if='{{!syncTitle.length}}'>
+        <text style="display:inline-block;padding-top:150px;">暂无相关分类信息 ╯︿╰</text>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+export default class classificationItem extends wepy.component {
+    components = {};
+
+    data = {};
+    methods = {
+        lifeDetail(info_id){
+            wx.getStorage({
+                key: 'openId&token',
+                success: (res)=> {
+                    wx.navigateTo({
+                        url: './lifeDetails?info_id='+info_id+'&open_id='+res.data.open_id
+                    });
+                },
+                fail: function() {
+                    wx.showToast({
+                        title: '未进行授权登录，无法查看',
+                        icon: 'none'
+                    })
+                }
+            })
+        }
+    };
+    props = {
+        syncTitle: {
+            type: Array,
+            default: 'null'
+        }
+    }
+}
+</script>
+
+<style lang="less">
+    .itemBox{
+        display: flex;
+        box-sizing: border-box;
+        padding-bottom: 15rpx;
+        padding-left: 20rpx;
+        height: 145rpx;
+        border-bottom: 1px solid #f1f1f1;
+        margin-bottom: -2rpx;
+        image{
+            width: 160rpx;
+            height: 130rpx;
+            // border: 1rpx solid #f1f1f1;
+        }
+        .itemBox_right{
+            flex: 1;
+            box-sizing: border-box;
+            padding: 0 20rpx;
+            view:nth-child(1){
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                .title{
+                    font-size: 24rpx;
+                    color: #000;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 1;
+                    overflow: hidden;
+                }
+                .finished{
+                    border-radius: 7rpx;
+                    padding: 0 8rpx;
+                }
+            }
+            view:nth-child(2){
+                font-size: 18rpx;
+                color: #999;
+                margin-top: 10rpx;
+            }
+            view:nth-child(3){
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 18rpx;
+                color: #ccc;
+                view{
+                    flex: 5;
+                }
+                view:nth-child(1){
+                    font-size: 18rpx;
+                    color:#ff9e6e;
+                }
+                view:nth-child(2){
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    icon{
+                        transform: translateY(-12rpx);
+                        font-size: 25rpx;
+                        color: #cdcdcd;
+                    }
+                }
+            }
+        }
+    }
+</style>

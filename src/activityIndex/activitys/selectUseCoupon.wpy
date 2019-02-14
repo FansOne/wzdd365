@@ -1,0 +1,51 @@
+<script>
+import wepy from 'wepy';
+import userSelectCoupon from '../../components/userSelectCoupon';
+import { userWallet } from '../../api/request'
+
+export default class selectUseCoupon extends wepy.page {
+    config = {
+        navigationBarTitleText: '选择抵用券',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {userSelectCoupon:userSelectCoupon};
+
+    data = {
+        coupons:[]
+    };
+    methods = {};
+
+    events = {
+        getCoupon:(couponItem)=>{
+            wx.setStorage({
+                key: 'couponItem',
+                data: couponItem,
+                success: ()=> {
+                    wx.navigateBack({
+                        delta: 1
+                    });
+                }
+            })
+        }
+    };
+    onLoad(options) {
+        // 获取用户优惠券
+        userWallet(options.open_id,options.shop_id).then((res)=>{
+            this.coupons = res.data.data.coupons
+            this.$apply()
+        })
+    };
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class="container" style="padding-top:10rpx;">
+        <userSelectCoupon :syncTitle.sync="coupons"></userSelectCoupon>
+    </view>
+</template>
+
+<style lang="less">
+/** less **/
+</style>

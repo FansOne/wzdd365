@@ -1,0 +1,251 @@
+<script>
+import wepy from 'wepy';
+import { orderShare_teambuy } from '../../api/request';
+import token from '../../api/getToken'
+
+export default class collageShare extends wepy.page {
+    config = {
+        navigationBarTitleText: '加入好友拼团',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+        disableScroll:true
+    };
+    components = {};
+
+    data = {
+        allData:{},
+        house:'00',
+        minute:'00',
+        second:'00',
+        //定时器
+        timer:'',
+        shop_id:'',
+    };
+    methods = {
+        goConfirm(e){
+            let iv = e.detail.iv;
+            let encryptedData = e.detail.encryptedData;
+            wx.showLoading({title: 'Loading...',mask: true});
+            wx.getStorage({
+                key: 'openId&token',
+                success: res => {
+                    let open_id = res.data.open_id;
+                    wx.setStorage({
+                        key: 'selectBuy',
+                        data: this.allData,
+                        success: ()=>{
+                            wx.hideLoading();
+                            wx.navigateTo({
+                                url: './collageConfirmOrder?open_id='+open_id+'&shop_id='+this.shop_id+'&parent_order_id='+this.allData.id
+                            });
+                        }
+                    });
+                },
+                fail:()=>{
+                    token(iv, encryptedData).then((res)=>{
+                        wx.setStorageSync('openId&token', {
+                            open_id:res.data.data.open_id,
+                            token:res.data.data.token
+                        });
+                        let open_id = res.data.data.open_id;
+                        wx.setStorage({
+                            key: 'selectBuy',
+                            data: this.allData,
+                            success: ()=>{
+                                wx.hideLoading();
+                                wx.navigateTo({
+                                    url: './collageConfirmOrder?open_id='+open_id+'&shop_id='+this.shop_id+'&parent_order_id='+this.allData.parent_order_id
+                                });
+                            }
+                        });
+                    })
+                }
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.shop_id = options.shop_id
+        orderShare_teambuy(options.order_id).then((res)=>{
+            wx.setStorage({
+                key: 'selectBuy',
+                data: res.data.data
+            })
+            this.allData = res.data.data
+            this.$apply()
+            var num = res.data.data.elapsed_time
+            this.timer = setInterval(()=>{
+                this.countDown(num)
+                num --;
+                if(num < 0){
+                    clearInterval(this.timer)
+                }
+            },1000)
+        })
+    };
+    onUnload(){
+        clearInterval(this.timer)
+    }
+    //倒计时函数
+    countDown(res){
+        let house;
+        let minute;
+        let second;
+        if(res<3600){
+            house = '00';
+        }else{
+            house = String(parseInt(res/3600));
+            house = (house.length> 1) ? house : '0' + house;
+        }
+        if(res<60){
+            minute = '00';
+        }else{
+            minute = String(parseInt((res%3600)/60));
+            minute = (minute.length> 1) ? minute : '0' + minute;
+        }
+        
+        second = String(res - house*3600 - minute*60);
+        second = (second.length> 1) ? second : '0' + second;
+        this.house = house
+        this.minute = minute
+        this.second = second
+        this.$apply()
+    };
+}
+</script>
+
+<template lang="wxml">
+    <view class="container">
+        <view class="userIcon">
+            <image src="{{allData.avatar_url}}"/>
+            <view>{{allData.nickname}}</view>
+        </view>
+        <view class="goodsBox">
+            <view class="goodsItem">
+                <image src='{{allData.pic_url}}'/>
+                <view class="goodsItem_right">
+                    <view class="goodsItem_title">{{allData.title}}</view>
+                    <view class="goodsItem_price">
+                        <view>￥{{allData.price}}</view>
+                        <view>￥{{allData.origin_price}}</view>
+                    </view>
+                </view>
+            </view>
+        </view>
+        <view class="time">
+            <view class="time_left">还差<text style="color:#ff9e6e">{{allData.join_people}}</text>人成团</view>
+            <view class="time_right">距离结束<text style="margin-left:10rpx;">{{house}}</text><view style="font-size:24rpx;transform: translateY(4rpx);margin:0 4rpx;">时</view><text>{{minute}}</text><view style="font-size:24rpx;transform: translateY(4rpx);margin:0 4rpx;">分</view><text>{{second}}</text></view>
+        </view>
+        <button open-type='getUserInfo' bindgetuserinfo='goConfirm'>加入好友拼团</button>
+    </view>
+</template>
+
+<style lang="less">
+    .userIcon{
+        width: 100%;
+        box-sizing: border-box;
+        padding: 60rpx 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        image{
+            width: 161rpx;
+            height: 161rpx;
+            border-radius: 50%;
+        }
+        view{
+            margin-top: 20rpx;
+            font-size: 30rpx;
+        }
+    }
+    .goodsBox{
+        width: 100%;
+        height: 169rpx;
+        box-sizing: border-box; 
+        padding: 0 35rpx;
+        .goodsItem{
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            padding: 20rpx;
+            width: 100%;
+            height: 169rpx;
+            background-color: #f5f5f5;
+            border-radius: 10rpx;
+            image{
+                height: 100%;
+                width: 170rpx;
+                border-radius: 6rpx;
+            }
+            .goodsItem_right{
+                padding-left: 20rpx;
+                display: flex;
+                flex-direction: column;
+                .goodsItem_title{
+                    font-size: 28rpx;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 1;
+                    overflow: hidden;
+                }
+                .goodsItem_price{
+                    display: flex;
+                    align-items: center;
+                    margin-top: 16rpx;
+                    view:nth-child(1){
+                        font-size: 28rpx;
+                        color: #ff9955;
+                    }
+                    view:nth-child(2){
+                        margin-left: 8rpx;
+                        font-size: 22rpx;
+                        color: #666;
+                        text-decoration:line-through;
+                    }
+                }
+            }
+        }
+    }
+    .time{
+        display: flex;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box; 
+        padding: 0 35rpx;
+        margin-top: 60rpx;
+        font-size: 28rpx;
+        color: #666;
+        .time_left{
+            flex: .4;
+        }
+        .time_right{
+            flex: .6;
+            display: flex;
+            justify-content: flex-end;
+            text{
+                display: inline-block;
+                width: 45rpx;
+                height: 38rpx;
+                line-height: 38rpx;
+                background-color: #ff9e6e;
+                border-radius: 4rpx;
+                color: #fff;
+                text-align: center;
+            }
+        }
+    }
+    button{
+        position: fixed;
+        left: 0;
+        right: 0;
+        margin: auto;
+        width: 379rpx;
+        height: 72rpx;
+        line-height: 72rpx;
+        bottom: 120rpx;
+        background-color: #ff9e6e;
+        color: #fff;
+        font-size: 28rpx;
+    }
+</style>

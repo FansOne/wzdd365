@@ -1,0 +1,28 @@
+<script>
+import wepy from 'wepy';
+
+export default class cardLists extends wepy.page {
+    config = {
+        navigationBarTitleText: '优惠券',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {};
+    methods = {};
+
+    events = {};
+    onLoad() {};
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view>
+    </view>
+</template>
+
+<style lang="less">
+/** less **/
+</style>

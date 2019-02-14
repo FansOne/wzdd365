@@ -1,0 +1,301 @@
+<script>
+import wepy from 'wepy';
+import api from '../../api/api';
+import token from '../../api/getToken'
+
+export default class killDetails extends wepy.page {
+    config = {
+        navigationBarTitleText: '秒杀详情',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        allData:[],
+        imgUrls: [],
+        house:'00',
+        minute:'00',
+        second:'00',
+        millisecond:'0',
+        //定时器
+        timer:'',
+        timer1:'',
+        summary:''
+    };
+    methods = {
+    };
+    goConfirm(e){
+        let iv = e.detail.iv;
+        let encryptedData = e.detail.encryptedData;
+        wx.showLoading({title: 'Loading...',mask: true});
+        wx.getStorage({
+            key: 'openId&token',
+            success: res => {
+                let open_id = res.data.open_id;
+                wx.setStorage({
+                    key: 'selectBuy',
+                    data: this.allData,
+                    success: ()=>{
+                        wx.hideLoading();
+                        wx.navigateTo({
+                            url: './killOrderConfirm?open_id='+open_id+'&shop_id='+this.allData.id
+                        });
+                    }
+                });
+            },
+            fail:()=>{
+                token(iv, encryptedData).then((res)=>{
+                    wx.setStorageSync('openId&token',res.data.data);
+                    wx.setStorage({
+                        key: 'userInfo',
+                        data: e.detail.userInfo
+                    })
+                    let open_id = res.data.data.open_id;
+                    wx.setStorage({
+                        key: 'selectBuy',
+                        data: this.allData,
+                        success: ()=>{
+                            wx.hideLoading();
+                            wx.navigateTo({
+                                url: './killOrderConfirm?open_id='+open_id+'&shop_id='+this.allData.id
+                            });
+                        }
+                    });
+                })
+            }
+        });
+    }
+    events = {};
+    onLoad(options) {
+        // console.log(options)
+        this.killDetails(options.kill_id)
+    };
+    //页面退出清除定时
+    onUnload(){
+        clearInterval(this.timer)
+        clearInterval(this.timer1)
+    }
+    // 获取秒杀详情
+    async killDetails(kill_id){
+        const url = api.apiMall + '/kill/detail';
+        const data = {
+            kill_id : kill_id,
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data:data
+        }).then((res)=>{
+            this.allData = res.data.data
+            this.imgUrls.push(res.data.data.pic_url)
+            this.selectBuy = this.summary = res.data.data
+            this.summary = res.data.data.summary
+            this.$apply()
+            
+            //倒计时判断
+            var num = res.data.data.elapsed_time;
+            if(num<0){
+                num = 0
+            }else{
+                var milliseconds = 9
+                this.timer1 = setInterval(()=>{
+                    milliseconds --
+                    if(milliseconds < 0) milliseconds = 9
+                    this.millisecond = milliseconds
+                    this.$apply()
+                },100)
+            };
+            this.timer = setInterval(()=>{
+                this.countDown(num)
+                num --;
+                if(num < 0){
+                    clearInterval(this.timer)
+                    clearInterval(this.timer1)
+                    wx.showModal({
+                        title: '活动结束',
+                        content: '很遗憾晚来一步，该秒杀活动已经结束',
+                        showCancel: false,
+                        cancelText: '确定',
+                        cancelColor: '#000000',
+                        confirmText: '确定',
+                        confirmColor: '#3CC51F',
+                        success: res => {
+                            if(res.confirm){
+                                wx.navigateBack({
+                                    delta: 1
+                                });
+                            }
+                        }
+                    });
+                }
+            },1000)
+        })
+    }
+    //倒计时函数
+    countDown(res){
+        let house;
+        let minute;
+        let second;
+        if(res<3600){
+            house = '00';
+        }else{
+            house = String(parseInt(res/3600));
+            house = (house.length> 1) ? house : '0' + house;
+        }
+        if(res<60){
+            minute = '00';
+        }else{
+            minute = String(parseInt((res%3600)/60));
+            minute = (minute.length> 1) ? minute : '0' + minute;
+        }
+        
+        second = String(res - house*3600 - minute*60);
+        second = (second.length> 1) ? second : '0' + second;
+        this.house = house;
+        this.minute = minute;
+        this.second = second;
+        this.$apply()
+    };
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <swiper indicator-dots autoplay interval="4000" circular style='height:300rpx;'>
+            <block wx:for="{{imgUrls}}" wx:key=''>
+                <swiper-item>
+                    <image src="{{item}}" style='height:300rpx;'/>
+                </swiper-item>
+            </block>
+        </swiper>
+        <view class='killTime_box'>
+            <view class='killTime_left'>
+                <view class='killTime_name'>{{allData.title}}</view>
+                <view class='killTime_price'>￥{{allData.price}}</view>
+            </view>
+            <view class='killTime_right'>
+                <view class='killTime_right_time'>
+                    <view style='margin-right:7rpx;'>距离结束</view><text style="width:70rpx">{{house}}</text>时<text>{{minute}}</text>分<text>{{second}}</text>秒<text>{{millisecond}}</text>
+                </view>
+            </view>
+        </view>
+        <view class='killTime_box'>
+            <view class='killTime_left'>
+                <view class='killTime_left_line'></view>
+                <view style='font-size:24rpx;color:#666;'>商品详情</view>
+            </view>
+            <view class='killTime_right'>
+                <view style='font-size:24rpx;color:#666'>由<text style='color:#ff9e6e'>{{allData.shop_title}}</text>提供</view>
+            </view>
+        </view>
+        <rich-text nodes="{{summary}}" mode='widthFix'></rich-text>
+        <!-- 底部结算 -->
+        <view class='SettlementBox'>
+            <view class='SettlementBox_left'>
+                <view>￥ {{allData.price}}</view>
+                <view>￥ {{allData.origin_price}}</view>
+            </view>
+            <button open-type='getUserInfo' @getuserinfo='goConfirm'>立即购买</button>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .killTime_box{
+        display: flex;
+        align-items: center;
+        height: 65rpx;
+        background-color: #fafafa;
+        border-bottom: 1px solid #f1f1f1;
+        box-sizing: border-box;
+        padding: 20rpx 30rpx;
+        .killTime_left{
+            flex: .4;
+            display: flex;
+            align-items: center;
+            .killTime_name{
+                font-size: 30rpx;
+                color: #000;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 1;
+                overflow: hidden;
+            }
+            .killTime_price{
+                margin-left: 15rpx;
+                height: 32rpx;
+                width: 100rpx;
+                background-color: #ff9e6e;
+                font-size: 18rpx;
+                padding: 0 7rpx;
+                color: #fff;
+                line-height: 32rpx;
+                text-align: center;
+                border-radius: 7rpx;
+            }
+            .killTime_left_line{
+                margin-right: 15rpx;
+                width: 5rpx;
+                height: 33rpx;
+                background-color: #ff9e6e;
+            }
+        }
+        .killTime_right{
+            flex: .6;
+            display: flex;
+            justify-content: flex-end;
+            .killTime_right_time{
+                display: flex;
+                color: #666;
+                font-size: 24rpx;
+                text{
+                    display: inline-block;
+                    font-size: 24rpx;
+                    height: 32rpx;
+                    width: 38rpx;
+                    color: #fff;
+                    background-color: #ff9e6e;
+                    text-align: center;
+                    line-height: 32rpx;
+                    border-radius: 7rpx;
+                }
+            }
+        }
+    }
+    .SettlementBox{
+        position: fixed;
+        display: flex;
+        bottom: 0;
+        width: 100%;
+        height: 88rpx;
+        background-color: #fafafa;
+        border-top: 1rpx solid #f1f1f1;
+        .SettlementBox_left{
+            padding-left: 30rpx;
+            display: flex;
+            flex: 1;
+            align-items: center;
+            view:nth-child(1){
+                font-size: 30rpx;
+                color: #f40;
+            }
+            view:nth-child(2){
+                margin-left: 10rpx;
+                font-size: 24rpx;
+                color: #666;
+                text-decoration:line-through;
+            }
+        }
+        button{
+            height: 89rpx;
+            width: 240rpx;
+            border-radius: 0;
+            background-color: #ff9e6e;
+            line-height: 88rpx;
+            color: #fff;
+            text-align: center;
+            font-size: 24rpx;
+        }
+    }
+</style>

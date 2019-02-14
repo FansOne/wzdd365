@@ -1,0 +1,714 @@
+.container{
+    position: relative;
+    box-sizing: border-box;
+}
+button::after{
+    border:none;
+}
+.getMore{
+    font-size: 24rpx;
+    color: gray;
+    text-align: center;
+    padding: 20rpx 0 35rpx 0;
+}
+.peripheryShopTitle{
+    position: relative;
+    box-sizing: border-box;
+    padding: 0 30rpx;
+    font-size: 24rpx;
+    display: flex;
+    align-items: center;
+    height: 60rpx;
+    line-height: 60rpx;
+    border-bottom: 1px solid #f1f1f1;
+    .peripheryShopTitle_contant{
+        position: absolute;
+        width: 300rpx;
+        left: 0;
+        right: 0;
+        margin: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .peripheryShopTitle_line{
+        width: 50rpx;
+        height: 5rpx;
+        background-color: #ff925e;
+    }
+    .peripheryShopTitle_title{
+        margin: 0 13rpx;
+        color: #969696;
+    } 
+}
+.titleBox{
+    display: flex;
+    align-items: center;
+    background-color: #fafafa;
+    height: 65rpx;
+    line-height: 65rpx;
+    box-sizing: border-box;
+    padding: 0 30rpx;
+    font-size: 24rpx;
+    color: #6f6f6f;
+    .titleBox_line{
+        width: 5rpx;
+        height: 32rpx;
+        background-color: #ff9e6e;
+        margin-right: 15rpx;
+    }
+}
+.areaBox{
+    box-sizing: border-box;
+    padding: 20rpx;
+    display: flex;
+    flex-wrap: wrap;
+    .areaItem{
+        padding: 0 10rpx;
+        .areaItem_{
+            width: 150rpx;
+            height: 48rpx;
+            line-height: 48rpx;
+            background-color: #fafafa;
+            font-size: 24rpx;
+            color: #6f6f6f;
+            text-align: center;
+        }
+    }
+}
+swiper{
+    height: 220rpx;
+    image{
+        width: 100%;
+        height: 220rpx;
+    }
+}
+// 文本框
+.section{
+    margin-top: 30rpx;
+    padding: 0 30rpx;
+    box-sizing: border-box;
+}
+textarea{
+    padding: 20rpx 0;
+    width: 100%;
+    color: #333333;
+    height: 235rpx;
+    font-size: 28rpx;
+}
+.maxInput{
+    margin: 0 40rpx;
+    text-align: right;
+    font-size: 28rpx;
+    color: #969696;
+    transform: translateY(-50rpx);
+}
+// 提交按钮
+.preservation-btn{
+    position: absolute;
+    width: 500rpx;
+    height: 65rpx;
+    left: 0;
+    right: 0;
+    margin: auto;
+    font-size: 28rpx;
+    text-align: center;
+    line-height:65rpx; 
+    border-radius: 10rpx;
+}
+.btnUse{
+    background-color: #ff9e6e;
+    box-shadow: 0 0 10rpx #ff9e6e;
+    border-radius: 10rpx;
+    color: #ffffff;
+}
+/*顶部Tab导航样式*/
+.navbar{ 
+    flex: none; 
+    display: flex; 
+    background: #f9f9f9;
+    height: 88rpx;
+    align-items: center; 
+  } 
+  .navbar .item{ 
+    position: relative; 
+    flex: auto; 
+    text-align: center;
+    line-height: 88rpx; 
+    font-size: 24rpx;
+    color: #666666;
+    font-family: Microsoft YaHei;
+    border-bottom: 1rpx solid #efeff4;
+  } 
+  .navbar .item.active{ 
+    color: #ec9e14; 
+    font-size: 26rpx;
+    font-family: Microsoft YaHei;
+  } 
+  .navbar .item.active:after{ 
+      content: ""; 
+      position: absolute;
+      bottom:2rpx; 
+      left: 0; 
+      right: 0;
+      margin: auto; 
+      height: 4rpx;
+      width: 40rpx;
+      background-color: #ec9e14;
+    }
+.goodItemBox{
+    display: flex;
+    box-sizing: border-box;
+    padding: 22rpx 30rpx;
+    border-bottom: 1px solid #f1f1f1;
+    image{
+        width: 135rpx;
+        height: 135rpx;
+    }
+    .goodItemBox_right{
+        position: relative;
+        display: flex;
+        flex: 1;
+        padding-left:25rpx;
+        .goodItemBox_right_price{
+            flex: 1;
+            .goodItemBox_title{
+                font-size: 24rpx;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 1;
+                overflow: hidden;
+            }
+            .goodItemBox_price{
+                font-size: 24rpx;
+                color: red;
+                text{
+                    display: inline-block;
+                    margin-left: 5rpx;
+                    color: #666;
+                    font-size: 18rpx;
+                    text-decoration:line-through;
+                }
+            }
+        }
+        .juLi{
+            background-color: #efefef;
+            height: 32rpx;
+            padding: 0 10rpx;
+            line-height: 32rpx;
+            text-align: center;
+            font-size: 20rpx;
+            border-radius: 5rpx;
+            color: #666;
+        }
+        .needIntegralBox{
+            font-size: 24rpx;
+            color: #ff925e;
+            width: 150rpx;
+            text-align: right;
+            line-height: 24rpx;
+            position: absolute;
+            bottom: 12rpx;
+            right: 0;
+        }
+    }
+}
+.goodItemBox{
+    display: flex;
+    box-sizing: border-box;
+    padding: 20rpx 30rpx;
+    border-bottom: 1px solid #f1f1f1;
+    image{
+        width: 135rpx;
+        height: 135rpx;
+    }
+    .goodItemBox_right{
+        display: flex;
+        flex: 1;
+        padding-left:25rpx;
+        .goodItemBox_right_price{
+            flex: 1;
+            .goodItemBox_title{
+                font-size: 26rpx;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 1;
+                overflow: hidden;
+            }
+            .goodItemBox_price{
+                font-size: 24rpx;
+                color: red;
+            }
+        }
+        .juLi{
+            background-color: #efefef;
+            height: 32rpx;
+            padding: 0 10rpx;
+            line-height: 32rpx;
+            text-align: center;
+            font-size: 20rpx;
+            border-radius: 5rpx;
+        }
+    }
+}
+.numBeyond{
+    padding: 8rpx 0;
+    position: fixed;
+    top: -56rpx;
+    width: 100%;
+    text-align: center;
+    height: 40rpx;
+    background-color: #fff;
+    color: red;
+    font-size: 30rpx;
+    line-height: 40rpx;
+}
+.numBeyondShow{
+    transform: translateY(56rpx) !important;
+    transition: transform .5s;
+}
+.voucherBox{
+    display: flex;
+    align-items: center;
+    height: 65rpx;
+    box-sizing: border-box;
+    padding: 0 30rpx;
+    background-color: #fafafa;
+    view{
+        font-size: 24rpx;
+        color: #666;
+        flex: .5;
+    }
+    view:nth-child(1){
+        text{
+            display: inline-block;
+            color: red;
+            margin-left: 15rpx;
+            line-height: 65rpx;
+        }
+    }
+    view:nth-child(2){
+        display: flex;
+        justify-content: flex-end;
+        letter-spacing: 3rpx;
+        text{
+            color: #ff9e6e;
+        }
+    }
+}
+.bottomPayBox{
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    width: 100%;
+    padding-left: 30rpx;
+    height: 88rpx;
+    position: fixed;
+    bottom: 0;
+    background-color: #fafafa;
+    border-top: 1rpx solid #f1f1f1;
+    view{
+        flex: 1;
+        font-size: 30rpx;
+        color: #ff6f6e;
+    }
+    button{
+        height: 89rpx;
+        width: 240rpx;
+        background-color: #ff9e6e;
+        border-radius: 0;
+        font-size: 24rpx;
+        color: #fff;
+        line-height: 89rpx;
+        text-align: center;
+    }
+}
+.topBox{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 50rpx 0;
+    width: 100%;
+    height: 330rpx;
+    .title{
+        font-size: 30rpx;
+        padding-top: 20rpx;
+        color: #ff9e6e;
+    }
+}
+.doubleBtn{
+    display: flex;
+    width: 490rpx;
+    padding-top: 40rpx;
+    justify-content: space-between;
+    view{
+        font-size: 24rpx;
+        color: #bbb;
+        width: 150rpx;
+        height: 48rpx;
+        text-align: center;
+        line-height: 48rpx;
+        border-radius: 10rpx;
+    }
+    view:nth-child(1){
+        border: 1px solid #f1f1f1;
+    }
+    view:nth-child(2){
+        border: 1px solid #f1f1f1;
+    }
+    view:nth-child(3){
+        background-color: #ff9e6e;
+        color: #fff;
+    }
+}
+.seleteDay{
+    display: flex;
+    height: 88rpx;
+    line-height: 88rpx;
+    background-color: #fafafa;
+    border-bottom: 1px solid #f1f1f1;
+    box-sizing: border-box;
+    padding: 0 30rpx;
+    .seleteDay_item{
+        flex: .3;
+        font-size: 24rpx;
+        color: #666;
+    }
+    .pickerBox{
+        flex: .7;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        font-size: 24rpx;
+        picker{
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+        }
+        picker view{
+            line-height: 88rpx;
+            color: #ff9e6e;
+            margin-right: 30rpx;
+        }
+        view{
+            color: #666;
+        }
+        input{
+            height: 88rpx;
+            line-height: 88rpx;
+        }
+    }
+}
+.titleBox{
+    background-color: #fff;
+    padding: 45rpx 30rpx;
+    color: #969696;
+}
+.SettlementBox{
+    position: fixed;
+    display: flex;
+    bottom: 0;
+    width: 100%;
+    height: 88rpx;
+    background-color: #fafafa;
+    border-top: 1rpx solid #f1f1f1;
+    .SettlementBox_left{
+        padding-left: 30rpx;
+        display: flex;
+        flex: 1;
+        align-items: center;
+        view{
+            font-size: 30rpx;
+            color: #f40;
+        }
+    }
+    button{
+        height: 89rpx;
+        width: 240rpx;
+        border-radius: 0;
+        background-color: #ff9e6e;
+        line-height: 88rpx;
+        color: #fff;
+        text-align: center;
+        font-size: 24rpx;
+    }
+}
+.progress_box{
+    box-sizing: border-box;
+    padding: 20rpx 30rpx;
+    progress{
+        border-radius:10rpx;
+        overflow:hidden
+    }
+}
+.messList{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    padding: 0 30rpx;
+    height: 64rpx;
+    background-color: #fafafa;
+    border-bottom: 1px solid #f1f1f1;
+    font-size: 24rpx;
+    color: #666;
+    view{
+        color: red;
+    }
+}
+.chooseImageBox{
+    display: flex;
+    padding: 0 30rpx;
+    .creamBg{
+        width:150rpx;
+        height:150rpx;
+        background-color:#efefef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        icon{
+            font-size:37rpx;
+            color:#969696;
+        }
+    }
+    .chooseImagePrompt{
+        padding-left: 30rpx;
+        view:nth-child(1){
+            font-size: 30rpx;
+            color: #666;
+            letter-spacing: 3rpx;
+            margin-bottom: 15rpx;
+        }
+        view:nth-child(2){
+            font-size: 24rpx;
+            color: #999;
+            letter-spacing: 5rpx;
+        }
+    }
+}
+.userSelectImgbox{
+    display: flex;
+    flex-wrap: wrap;
+    box-sizing: border-box;
+    padding: 20rpx 30rpx;
+    .userSelectImg_item{
+        width: 25%;
+        display: flex;
+        justify-content: flex-start;
+        padding-bottom: 20rpx;
+        image{
+            width: 150rpx;
+            height: 150rpx;
+            border: 1rpx dashed #ff9e6e;
+        }
+    }
+}
+rich-text{
+    margin-top: 20rpx;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0 10rpx;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-bottom: 88rpx;
+    text-align: center;
+    font-size: 28rpx;
+}
+.iconClassBox{
+    box-sizing: border-box;
+    padding: 30rpx 0rpx;
+    display: flex;
+    flex-wrap: wrap;
+    // justify-content: space-between;
+    .iconClassBox_item{
+        display: flex;
+        width: 20%;
+        flex-direction: column;
+        align-items: center;
+        font-size: 22rpx;
+        color: #969696;
+        // margin: 0 31rpx;
+        .imagebg{
+            height: 90rpx;
+            width: 90rpx;
+            border-radius: 50%;
+            display:flex;
+            align-items: center;
+            justify-content: center;
+            icon{
+                color:#fff;
+                font-size:45rpx;
+            }
+        }
+        view{
+            margin: 7rpx 0;
+        }
+    }
+}
+.show-faPiao{
+    margin: 30rpx 40rpx;
+    view{
+        font-family: "Microsoft YaHei";
+        font-size: 27rpx;
+        color: #666;
+        border: 1rpx  dashed #dcdcdc;
+        background-color: #fafafa;
+        padding: 15rpx 15rpx;
+    }
+}
+.nodata{
+    width: 100%;
+    padding: 175rpx 0;
+    display: flex;
+    justify-content: center;
+    image{
+        width: 255rpx;
+        height: 235rpx;
+    }
+}
+// 订单收货地址
+.userInfoBox{
+    box-sizing: border-box;
+    padding: 20rpx 30rpx 0 30rpx;
+    .userInfoBox_top{
+        display: flex;
+        align-items: center;
+        view{
+            font-size: 27rpx;
+            flex: .5;
+            border-bottom: 1rpx solid #f1f1f1;
+            background-color: #fafafa;
+            color: #666;
+        }
+        view:nth-child(1){
+            height: 65rpx;
+            line-height: 65rpx;
+            padding-left: 25rpx
+        }
+        view:nth-child(2){
+            height: 65rpx;
+            line-height: 65rpx;
+            text-align: right;
+            display:flex;
+            align-items:center;
+            justify-content: flex-end;
+            padding-right: 25rpx;
+        }
+    }
+    .userInfoBox_bottom{
+        font-size: 27rpx;
+        background-color: #fafafa;
+        height: 65rpx;
+        line-height: 65rpx;
+        padding: 0 20rpx;
+        color: #666;
+    }
+}
+// TAB页面tab
+.scrollNav{
+    width: 100%;
+    white-space: nowrap;
+    .item{
+        display: inline-block;
+        width: 18%;
+    }
+}
+.stepBox{
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 140rpx;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 30rpx;
+    .stepBox_item{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        .emptyCircle{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            width: 30rpx;
+            height: 30rpx;
+            border: 1rpx solid #ccc;
+            view{
+                height: 20rpx;
+                width: 20rpx;
+                background-color: #ccc;
+                border-radius: 50%;
+            }
+        }
+        view:nth-child(2){
+            margin-top: 15rpx;
+            font-size: 24rpx;
+            color: #ccc;
+        }
+    }
+    .line{
+        position: absolute;
+        left: 106rpx;
+        top: 46rpx;
+        width: 240rpx;
+        height: 2rpx;
+        background-color: #ff9e6e;
+    }
+    .line2{
+        transform: translateX(295rpx);
+        background-color: #ccc;
+    }
+}
+// 抽奖步骤
+.stepBoxs{
+    position: relative;
+    box-sizing: border-box;
+    padding: 30rpx;
+    .stepBox_item{
+        display: flex;
+        align-items: center;
+        .emptyCircle{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30rpx;
+            height: 30rpx;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            view{
+                width: 20rpx;
+                height: 20rpx;
+                background-color: #ccc;
+                border-radius: 50%;
+            }
+        }
+        view:nth-child(2){
+            font-size: 27rpx;
+            margin-left: 30rpx;
+            color: #ccc;
+        }
+    }
+    .line{
+        height: 110rpx;
+        width: 3rpx;
+        background-color: #ff9e6e;
+        position: absolute;
+        left: 46rpx;
+        top: 72rpx;
+    }
+    .line1{
+        transform: translateY(158rpx);
+        background-color: #ccc;
+    }
+}
+.noOrders{
+    font-size: 25rpx;
+    width: 100%;
+    text-align: center;
+    padding: 15rpx 0;
+    color: #666;
+}

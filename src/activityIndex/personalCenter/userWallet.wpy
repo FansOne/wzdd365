@@ -1,0 +1,234 @@
+<script>
+import wepy from 'wepy';
+import { userWallet_ } from '../../api/request'
+
+export default class userWallet extends wepy.page {
+    config = {
+        navigationBarTitleText: '我的钱包',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        navbar: ['充值记录','返利记录','消费记录'],
+        currentTab: 0,
+        //获取积分记录
+        allData:{},
+        open_id:'',
+    };
+    methods = {
+        navbarTap(e){
+            this.currentTab = e.currentTarget.dataset.idx
+    	},
+        goExchange(){
+            wx.navigateTo({
+                url: './walletRecharge?open_id='+this.open_id
+            });
+        },
+        goScavengingPage(){
+            wx.navigateTo({
+                url: './scavengingPayment?open_id='+this.open_id
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.open_id = options.open_id
+        userWallet_(options.open_id,1).then((res)=>{
+            this.allData = res.data.data
+            this.$apply()
+        })
+    };
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='integralRechargeBox'>
+            <view class='payMentMa' @tap='goScavengingPage'>
+                <icon class="iconfont icon-erweima"/>
+                <view>付款码</view>
+            </view>
+            <view class='balance'>我的余额</view>
+            <view class='integralNum'>{{allData.balance}}</view>
+            <view class='exchangeIntegral' @tap='goExchange'>我要充值</view>
+        </view>
+        <!--导航菜单-->
+        <view class="navbar" style=" z-index:50">
+            <!--循环-->
+            <view wx:for="{{navbar}}" data-idx="{{index}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap">
+                <view class="notice" wx:if="{{count[index]>0}}">{{count[index]}}</view>
+                {{item}}
+            </view>
+        </view>
+        <!-- TabContant -->
+        <!-- 充值记录 -->
+        <view hidden="{{currentTab !== 0}}">
+            <view wx:for='{{allData.recharge}}' wx:key='' class='acquisitionIntegralBox'>
+                <view class='acquisitionIntegralBox_left'>
+                    <view>{{item.created_at}}</view>
+                </view>
+                <view class='acquisitionIntegralBox_right'>
+                    <view>+ {{item.total_fee / 100}}</view>
+                </view>
+            </view>
+            <view wx:if='{{!allData.recharge.length}}' class="nodata">暂无充值记录</view>
+        </view>
+        <!-- 返利记录 -->
+        <view hidden="{{currentTab !== 1}}">
+            <view wx:for='{{allData.incoming}}' wx:key='' class='acquisitionIntegralBox'>
+                <view class='acquisitionIntegralBox_left'>
+                    <view>{{item.created_at}}</view>
+                </view>
+                <view class='acquisitionIntegralBox_right'>
+                    <view>+ {{item.total_fee / 100}}</view>
+                </view>
+            </view>
+            <view wx:if='{{!allData.incoming.length}}' class="nodata">暂无返利记录</view>
+        </view>
+        <!-- 消费记录 -->
+        <view hidden="{{currentTab !== 2}}">
+            <view wx:for='{{allData.outing}}' wx:key='' class='acquisitionIntegralBox'>
+                <view class='acquisitionIntegralBox_left'>
+                    <view>{{item.created_at}}</view>
+                </view>
+                <view class='acquisitionIntegralBox_right'>
+                    <view style='color:red;'>- {{item.money}}</view>
+                </view>
+            </view>
+            <view wx:if='{{!allData.outing.length}}' class="nodata">暂无消费记录</view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    page{
+        background-color: #fff;
+    }
+    .integralRechargeBox{
+        margin-bottom: 88rpx;
+        position: relative;
+        background-color: #ff9e6e;
+        height: 270rpx;
+        border-radius: 0 0 50% 50%;
+        .payMentMa{
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            position: absolute;
+            top: 10rpx;
+            box-sizing: border-box;
+            padding: 0 30rpx;
+            height: 30rpx;
+            width: 100%;
+            icon{
+                color: #fff;
+                transform: translateY(-10rpx);
+            }
+            view{
+                padding-left: 8rpx;
+                font-size: 24rpx;
+                color: #fff;
+            }
+        }
+        .balance{
+            position: absolute;
+            top: 40rpx;
+            width: 100%;
+            font-size: 24rpx;
+            color: #fff;
+            text-align: center;
+        }
+        .integralNum{
+            height: 60rpx;
+            line-height: 60rpx;
+            font-size: 48rpx;
+            color: #fff;
+            text-align: center;
+            padding-top: 85rpx;
+        }
+        .exchangeIntegral{
+            position: absolute;
+            right: 0;
+            left: 0;
+            margin: auto;
+            bottom: -20rpx;
+            width: 350rpx;
+            height: 80rpx;
+            color: #8c8c8c;
+            background-color: #fff;
+            font-size: 27rpx;
+            line-height: 80rpx;
+            text-align: center;
+            border-radius: 15rpx;
+            box-shadow: 0 0 10rpx #ccc;
+        }
+    }
+    /*顶部导航样式*/
+  .navbar{ 
+    flex: none; 
+    display: flex; 
+    background: #ffffff; 
+    z-index: 50; 
+  } 
+  .navbar .item{ 
+    position: relative; 
+    flex: auto; 
+    text-align: center;
+    line-height: 60rpx; 
+    font-size: 24rpx;
+    color: #666666;
+    font-family: Microsoft YaHei;
+    padding-bottom: 10rpx;
+    border-bottom: 1px solid #f1f1f1;
+  } 
+  .navbar .item.active{ 
+    color: #ff9e6e;
+    font-weight: bold; 
+    font-size: 30rpx;
+    font-family: Microsoft YaHei;
+  } 
+  .navbar .item.active:after{ 
+      content: ""; 
+      position: absolute;
+      bottom: 0rpx; 
+      left: 0; 
+      right: 0;
+      margin: auto; 
+      height: 5rpx;
+      width: 100rpx;
+      background-color: #ff9e6e;
+    }
+    .acquisitionIntegralBox{
+        box-sizing: border-box;
+        padding: 30rpx 50rpx;
+        border-bottom: 1px solid #f1f1f1;
+        display: flex;
+        .acquisitionIntegralBox_left{
+            flex: .7;
+            view{
+                font-size: 24rpx;
+                color: #333;
+            }
+        }
+        .acquisitionIntegralBox_right{
+            flex: .3;
+            justify-content: flex-end;
+            view{
+                text-align: right;
+                color: #00bb2a;
+                font-size: 24rpx;
+            }
+        }
+    }
+    .nodata{
+        color: #666;
+        font-size: 25rpx;
+        width: 100%;
+        text-align: center;
+        margin-top: 170rpx;
+    }
+</style>

@@ -1,0 +1,212 @@
+<script>
+import wepy from 'wepy';
+import api from '../../api/api'
+
+export default class goldBean extends wepy.page {
+    config = {
+        navigationBarTitleText: '我的金豆',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        navbar: ['获取记录','消费记录'],
+        currentTab: 0,
+        balance:'',
+        //获取积分记录
+        recharge:[],
+        // 消费记录
+        outing:[],
+        page:1,
+        open_id:'',
+    };
+    methods = {
+        navbarTap(e){
+            this.currentTab = e.currentTarget.dataset.idx
+    	},
+        goBeanExchange(){
+            wx.navigateTo({
+                url: './beanExchange?open_id='+this.open_id
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.open_id = options.open_id
+        this.userGold(options.open_id)
+    };
+    onShow(){
+        this.userGold(this.open_id)
+    }
+    // 金豆信息
+    userGold(open_id){
+        wepy.request({
+            url: api.apiMall + '/user/gold',
+            method: 'GET',
+            data: {
+                open_id: open_id,
+                page: this.page
+            }
+        }).then((res)=>{
+            this.recharge = res.data.data.recharge
+            this.outing = res.data.data.outing
+            this.balance = res.data.data.balance
+            this.$apply()
+        });
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='integralRechargeBox'>
+            <view class='balance'>金豆余额</view>
+            <view class='integralNum'>{{balance}}</view>
+            <view class='exchangeIntegral' @tap='goBeanExchange'>我要充值</view>
+        </view>
+        <!--导航菜单-->
+        <view class="navbar" style=" z-index:50">
+            <!--循环-->
+            <view wx:for="{{navbar}}" data-idx="{{index}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap">
+                <view class="notice" wx:if="{{count[index]>0}}">{{count[index]}}</view>
+                {{item}}
+            </view>
+        </view>
+        <!-- TabContant -->
+        <!-- 充值记录 -->
+        <view hidden="{{currentTab !== 0}}">
+            <view wx:if='{{!recharge.length}}' class="nodata">暂无获取金豆记录</view>
+            <view wx:for='{{recharge}}' wx:key='' class='acquisitionIntegralBox'>
+                <view class='acquisitionIntegralBox_left'>
+                    <view>{{item.created_at}}</view>
+                </view>
+                <view class='acquisitionIntegralBox_right'>
+                    <view>+ {{item.total_gold}}</view>
+                </view>
+            </view>
+        </view>
+        <!-- 消费记录 -->
+        <view hidden="{{currentTab !== 1}}">
+            <view wx:if='{{!outing.length}}' class="nodata">暂无消费记录</view>
+            <view wx:for='{{outing}}' wx:key='' class='acquisitionIntegralBox'>
+                <view class='acquisitionIntegralBox_left'>
+                    <view>{{item.created_at}}</view>
+                </view>
+                <view class='acquisitionIntegralBox_right'>
+                    <view style='color:red;'>- {{item.gold}}</view>
+                </view>
+            </view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    page{
+        background-color: #fff;
+    }
+    .integralRechargeBox{
+        margin-bottom: 88rpx;
+        position: relative;
+        background-color: #ff9e6e;
+        height: 270rpx;
+        border-radius: 0 0 50% 50%;
+        .balance{
+            position: absolute;
+            top: 40rpx;
+            width: 100%;
+            font-size: 24rpx;
+            color: #fff;
+            text-align: center;
+        }
+        .integralNum{
+            height: 60rpx;
+            line-height: 60rpx;
+            font-size: 48rpx;
+            color: #fff;
+            text-align: center;
+            padding-top: 85rpx;
+        }
+        .exchangeIntegral{
+            position: absolute;
+            right: 0;
+            left: 0;
+            margin: auto;
+            bottom: -20rpx;
+            width: 350rpx;
+            height: 80rpx;
+            color: #8c8c8c;
+            background-color: #fff;
+            font-size: 27rpx;
+            line-height: 80rpx;
+            text-align: center;
+            border-radius: 15rpx;
+            box-shadow: 0 0 10rpx #ccc;
+        }
+    }
+    /*顶部导航样式*/
+  .navbar{ 
+    flex: none; 
+    display: flex; 
+    background: #ffffff; 
+    z-index: 50; 
+  } 
+  .navbar .item{ 
+    position: relative; 
+    flex: auto; 
+    text-align: center;
+    line-height: 60rpx; 
+    font-size: 24rpx;
+    color: #666666;
+    font-family: Microsoft YaHei;
+    padding-bottom: 10rpx;
+    border-bottom: 1px solid #f1f1f1;
+  } 
+  .navbar .item.active{ 
+    color: #ff9e6e;
+    font-weight: bold; 
+    font-size: 30rpx;
+    font-family: Microsoft YaHei;
+  } 
+  .navbar .item.active:after{ 
+      content: ""; 
+      position: absolute;
+      bottom: 0rpx; 
+      left: 0; 
+      right: 0;
+      margin: auto; 
+      height: 5rpx;
+      width: 100rpx;
+      background-color: #ff9e6e;
+    }
+    .acquisitionIntegralBox{
+        box-sizing: border-box;
+        padding: 30rpx 50rpx;
+        border-bottom: 1px solid #f1f1f1;
+        display: flex;
+        .acquisitionIntegralBox_left{
+            flex: .7;
+            view{
+                font-size: 24rpx;
+                color: #333;
+            }
+        }
+        .acquisitionIntegralBox_right{
+            flex: .3;
+            justify-content: flex-end;
+            view{
+                text-align: right;
+                color: #00bb2a;
+                font-size: 24rpx;
+            }
+        }
+    }
+    .nodata{
+        font-size: 25rpx;
+        width: 100%;
+        text-align: center;
+        color: #666;
+        margin-top: 185rpx;
+    }
+</style>

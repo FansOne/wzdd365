@@ -1,0 +1,552 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api';
+import util from '../api/util';
+import token from '../api/getToken'
+
+export default class dianCan extends wepy.page {
+    config = {
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        updateTotal:0,               //更新的总价
+        merchant_id:'',
+        catelogs:[],
+        status: 0,
+        orderGoods:[],   //用户所选的商品对象
+        arrHeight:[],
+    };
+    methods = {
+        //点击跳转事件
+        getStatus(e) {
+            this.status = e.currentTarget.dataset.index;
+        },
+        
+        add(jObject,l,m){
+            this.catelogs[l].goods[m].qty++;
+            let fixed = (jObject.price)*1;
+            this.updateTotal = Number(this.updateTotal) + Number(fixed);
+            this.updateTotal = util.keepTwoDecimalFull(this.updateTotal);
+            this.updateCount ++;
+
+            let flag = false;
+            let index = -1;
+            if(this.orderGoods.length == 0){
+                jObject.qty = 1;
+                this.orderGoods.push(jObject)
+            }else{
+                for(var i = 0;i<this.orderGoods.length;i++){
+                    if (this.orderGoods[i].id == jObject.id) {
+                        flag = true;
+                        index = i;
+                    }
+                }
+                if (flag) {
+                    this.orderGoods[index].qty++;
+                }else {
+                    jObject.qty = 1;
+                    this.orderGoods.push(jObject);
+                }
+            }
+        },
+        reduce(jObject,l,m){
+            if(this.catelogs[l].goods[m].qty <= 0){
+                this.catelogs[l].goods[m].qty = 0;
+                return;
+            }else{
+                this.catelogs[l].goods[m].qty--;
+            }
+            var fixed = (jObject.price)*1;
+            if(this.updateTotal <= 0){
+                this.updateTotal = 0;
+            }else{
+                this.updateTotal = Number(this.updateTotal) - Number(fixed); 
+            }
+            this.updateTotal = util.keepTwoDecimalFull(this.updateTotal);
+            if(this.updateCount <= 0){
+                this.updateCount = 0;
+            }else{
+                this.updateCount --;
+            }
+            let flag = false;
+            let index = -1;
+            for(var i = 0;i<this.orderGoods.length;i++){
+                if (this.orderGoods[i].id == jObject.id) {
+                    flag = true;
+                    index = i;
+                }
+            }
+            if (flag) {
+                if(this.orderGoods[index].qty <= 1){
+                    this.orderGoods.splice(index,1);
+                    this.count = 0;
+                }else{
+                    this.orderGoods[index].qty--;
+                }
+            }
+            console.log(this.orderGoods)
+        },
+        //滚动联动事件
+        listScroll(e){
+            this.scrollY = e.detail.scrollTop;
+        },
+        // 提交订单
+        confirmOrder(e){
+            wx.setStorage({key: 'selectOrderGoods',data: this.orderGoods});
+            let iv = e.detail.iv;
+            let encryptedData = e.detail.encryptedData;
+            wx.showLoading({title: 'Loading...',mask: true});
+            wx.getStorage({
+                key: 'openId&token',
+                success: res => {
+                    let open_id = res.data.open_id;
+                    if(this.orderGoods.length){
+                        wx.hideLoading();
+                        wx.navigateTo({
+                            url: '../activityIndex/activitys/dianCanConfirmOrder?updateTotal='+this.updateTotal+'&shop_id='+this.merchant_id+'&open_id='+open_id
+                        });
+                    }else{
+                        wx.hideLoading();
+                        wx.showToast({
+                            title: '请选择商品',
+                            icon: 'none'
+                        });
+                    }
+                },
+                fail:()=>{
+                    token(iv, encryptedData).then((res)=>{
+                        wx.setStorageSync('openId&token', {
+                            open_id:res.data.data.open_id,
+                            token:res.data.data.token
+                        });
+                        wx.setStorage({
+                            key: 'userInfo',
+                            data: e.detail.userInfo
+                        })
+                        let open_id = res.data.data.open_id;
+                        if(this.orderGoods.length){
+                            wx.hideLoading();
+                            wx.navigateTo({
+                                url: '../activityIndex/activitys/dianCanConfirmOrder?updateTotal='+this.updateTotal+'&shop_id='+this.merchant_id+'&open_id='+open_id
+                            });
+                        }else{
+                            wx.hideLoading();
+                            wx.showToast({
+                                title: '请选择商品',
+                                icon: 'none'
+                            });
+                        }
+                    })
+                }
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.merchant_id = options.merchant_id
+        this.getorderFood()
+        if(options.catering == 0){
+            wx.setNavigationBarTitle({
+                title:'商品'
+            })
+        }else{
+            wx.setNavigationBarTitle({
+                title:'点餐'
+            })
+        }
+    };
+    
+    //获取门店点餐菜单
+    async getorderFood(){
+        const url = api.apiMall + '/menu';
+        const data = {
+            shop_id: this.merchant_id
+        };
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data: data,
+        }).then((res)=>{
+            // console.log(res.data.data)
+            this.catelogs = res.data.data
+            this.catelogs.forEach((item, index) => {
+                item.goods.forEach(element=>{
+                    // console.log(element.price)
+                    element.price = parseFloat(element.price).toFixed(2)
+                    element.price = parseFloat(element.price).toFixed(2)
+                })
+                for(var i in item.goods){
+                    item.goods[i].qty = 0;
+                }
+            })
+            if(this.catelogs){
+                //创建节点选择器
+                let that = this;
+                let a = setTimeout(function(){
+                    let query = wx.createSelectorQuery();
+                    //选择id
+                    query.select('#sold').boundingClientRect()
+                    query.select('#images').boundingClientRect()
+                    query.select('#sold-list-head').boundingClientRect()
+                    query.exec(function (res) {
+                    that.domHeight = res;
+                    if(that.domHeight){
+                        var sum = 0;
+                        that.catelogs.forEach((item, index) => {
+                            sum += Number(item.goods.length * Number(that.domHeight[0].height) + Number(that.domHeight[2].height));
+                            that.arrHeight.push(Number(sum));
+                            })
+                            that.arrHeight[0] = Number(that.arrHeight[0]) + Number(that.domHeight[1].height);
+                    }
+                    that.$apply();
+                    })
+                },1000)
+            }
+            this.$apply()
+        })
+    }
+    computed = {
+      //商品滑动
+      currentIndex () {
+        for (let j = 0; j < this.arrHeight.length; j++) {
+          let height1 = this.arrHeight[j];
+          let height2 = this.arrHeight[j + 1];
+          if (this.scrollY >= height1 && this.scrollY < height2) {
+            return (j+1)
+          }
+        }
+        return 0
+      }
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container' style="width:100%;height:100%;border-top:2rpx solid #f3f3f3;box-sizing:border-box;">
+        <!--选择菜品-->
+        <view class="hot-sold-wrap" style="height:calc(100% - 88rpx);">
+            <!-- 左 -->
+            <view class="sold-slide-list-wrqp">
+                <scroll-view scroll-y style="display:block;width:100%;height:100%;display:flex;">
+                <view @tap="getStatus" id="NAV{{index}}" data-index="{{index}}" data-id="{{index}}" class="sold-slide-list {{index === currentIndex ? 'sold-slide-list-active' : ''}}" wx:for="{{catelogs}}" wx:key="index"><text></text>{{item.title}}</view>
+                </scroll-view>
+            </view>
+            <!-- 右 -->
+            <view>
+                <scroll-view @scroll="listScroll" scroll-y style="height:100%;display:flex;" scroll-into-view="NAV{{status}}" data-view="NAV{{status}}" scroll-with-animation="true">
+                <view class="sold-list-wrap">
+                    <image id="images" style="display:block;width:100%;height:0rpx;"/>
+                    <view style="width:100%;height:auto;" wx:for="{{catelogs}}" wx:for-index="i1" wx:key="index" wx:for-item="i" data-id="NAV{{i1}}" id="NAV{{i1}}" data-length="{{i.goods.length}}">
+                        <view class="sold-list-head" id="sold-list-head">
+                            
+                            <view>{{i.title}}</view>
+                            <!-- <view class="desc"></view> -->
+                        </view>
+                        <view id="sold" class="sold-list-content" wx:for="{{i.goods}}" wx:key="index" data-id="{{j.id}}" data-index="{{j1}}" wx:for-item="j" wx:for-index="j1">
+                            <view class="sold-list-content_top">
+                                <!-- src="{{j.pic_url}}" -->
+                                <image class="food-img" mode='scaleToFill' src="{{j.pic_url}}"/>
+                                <view class="food-desc-wrap">
+                                    <view class="food-name"><view>{{j.title}}</view><view class="price">￥{{j.price}}</view></view>
+                                    <view class='food-desc'>{{j.tiny_desc}}</view>
+                                </view>
+                            </view>
+                            <view class="sold-list-content_bottom">
+                                <view class="food-num-wrap">
+                                    <view class="add-reduce">
+                                        <view class='monthly_sales'>月销{{j.monthly_sales}}</view>
+                                        <view class="add-reduce_xiangou"><block wx:if='{{j.limited}}'>仅限购<text>{{j.limited_qty}}</text>份</block></view>
+                                        <view class="add-reduce_jiajian">
+                                            <view wx:if='{{j.qty != 0}}' class="reduce-box" @tap.stop="reduce({{j}},{{i1}},{{j1}})">-</view>
+                                            <view class="num" wx:if='{{j.qty != 0}}'>{{j.qty}}</view>
+                                            <view class="reduce-box-2" @tap.stop="add({{j}},{{i1}},{{j1}})">+</view>
+                                        </view>
+                                    </view>
+                                </view>
+                            </view>
+                        </view>
+                    </view>
+                </view>
+                </scroll-view>
+            </view>
+        </view>
+        <view class='bottomJieSuanBox'>
+            <view wx:if='{{updateTotal == 0}}'>￥0.00</view>
+            <view wx:else>￥{{updateTotal}}</view>
+            <button open-type='getUserInfo' @getuserinfo='confirmOrder'>结算</button>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+  page{
+    width:100%;
+    height:100%;
+    background-color:#f3f3f3;
+  }
+  .box-screen{
+    width:100%;
+    height:100%;
+    background-color:#fff;
+    position:absolute;
+    z-index:9;
+    top:0;
+    left:0;
+  }
+  /*顶部样式*/
+  .deliver-wrap{
+    width:100%;
+    height:200rpx;
+    background-color:#ffd265;
+    border:1rpx solid #ffd265;
+    box-sizing:border-box;
+    .deliver-head-wrap{
+      width:710rpx;
+      height:200rpx;
+      padding-bottom:15rpx;
+      box-sizing:border-box;
+      background-color:#fff;
+      border-radius:6rpx;
+      position:relative;
+      margin:80rpx auto 0;
+      .sale-wrap{
+        width:650rpx;
+        height:auto;
+        margin:30rpx auto 0;
+        position:relative;
+        .sale-wrap-left{
+          width:90%;
+          height:26rpx;
+          margin-bottom:15rpx;
+          overflow:hidden;
+          image{
+            display:inline-block;
+            width:26rpx;
+            height:26rpx;
+            vertical-align: top;
+            margin-right:24rpx;
+          }
+          view{
+            font-size:22rpx;
+            color:#666;
+            display:inline-block;
+            vertical-align: top;
+            margin-right:38rpx;
+            margin-top:-2rpx;
+          }
+        }
+        .sale-wrap-right{
+          width:10rpx;
+          height:19rpx;
+          position:absolute;
+          bottom:2rpx;
+          right:0;
+        }
+      }
+    }
+  }
+  /*选择菜品样式 定位样式*/
+  .hot-sold-wrap{
+    width:100%;
+    background-color:#fff;
+    display:flex;
+    justify-content: space-between;
+    .sold-slide-list-wrqp{
+      background-color: #f3f3f3;
+      width:200rpx;
+      height:auto;
+      float:left;
+      .sold-slide-list{
+        display:flex;
+        justify-content:center;
+        align-items: center;
+        width:200rpx;
+        height:80rpx;
+        background-color:#f3f3f3;
+        color:#333;
+        font-size:30rpx;
+        line-height:80rpx;
+        text{
+          margin-right:30rpx;
+          display:inline-block;
+          width:6rpx;
+          height:35rpx;
+          background-color:#f3f3f3;
+        }
+      }
+      .sold-slide-list-active{
+        display:flex;
+        align-items: center;
+        color: #ff9e6e;
+        background-color:#fff;
+        text{
+          margin-right:20rpx;
+          display:inline-block;
+          width:6rpx;
+          height:35rpx;
+          background-color:#ff9e6e;
+        }
+      }
+    }
+    .sold-list-wrap{
+      height:auto;
+      float:right;
+      .adver{
+        display:block;
+        width:530rpx;
+        height:150rpx;
+        margin:20rpx 0;
+      }
+      .sold-list-head{
+        background-color: #fafafa;
+        width:550rpx;
+        height:80rpx;
+        margin:0 auto;
+        view{
+          display:inline-block;
+          height:100%;
+          line-height:80rpx;
+          font-size:24rpx;
+          color:#666;
+          vertical-align: top;
+          padding-left: 15rpx;
+        }
+      }
+      .sold-list-content{
+        width:100%;
+        padding:20rpx 30rpx;
+        border-bottom: 1rpx solid #f1f1f1;
+        box-sizing:border-box;
+        .sold-list-content_top{
+            display: flex;
+        }
+        .food-img{
+          display:inline-block;
+          width:100rpx;
+          height:100rpx;
+          margin-right:30rpx;
+        }
+        .food-desc-wrap{
+          flex: 1;
+          position:relative;
+          .food-name{
+            display: flex;
+            align-items: center;
+            font-size:30rpx;
+            color:#333;
+            font-weight:bold;
+            justify-content: space-between;
+            .price{
+                font-weight:normal;
+                color: red;
+            }
+          }
+          .food-desc{
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
+            padding-top: 7rpx;
+            font-size: 18rpx;
+            color: #666;
+          }
+        }
+      }
+    }
+  }
+  .sold-list-content_bottom{
+        margin-top: 10rpx;
+        display: flex;
+        align-items: center;
+        .food-num-wrap{
+            width:100%;
+            height:45rpx;
+        image{
+            display:inline-block;
+            width:45rpx;
+            height:44rpx;
+        }
+        .price{
+            display:inline-block;
+            color:#ff2323;
+            vertical-align: top;
+            height:100%;
+            line-height:45rpx;
+        }
+        .add-reduce{
+            display: flex;
+            align-items: center;
+            .monthly_sales{
+                flex: .2;
+                display: flex;
+                justify-content: center;
+                font-size: 18rpx;
+                letter-spacing: 3rpx;
+                color:#868686;
+            }
+            .add-reduce_xiangou{
+                padding-left: 41rpx;
+                flex: .4;
+                font-size: 18rpx;
+                letter-spacing: 3rpx;
+                text{
+                    color: #ff9e6e;
+                }
+            }
+            .add-reduce_jiajian{
+                flex: .4;
+                display: flex;
+                justify-content: flex-end;
+                .reduce-box,.reduce-box-2{
+                    width: 45rpx;
+                    height: 45rpx;
+                    background-color: #ccc;
+                    line-height: 39rpx;
+                    font-size: 36rpx;
+                    color: #fff;
+                    text-align: center;
+                    border-radius: 50%;
+                }
+                .reduce-box-2{
+                    background-color: #ff9e6e !important;
+                    color: #fff;
+                }
+                .num{
+                    font-size: 36rpx;
+                    margin: 0 15rpx;
+                    line-height: 44rpx;
+                    }
+                }
+            }
+        }
+  }
+  .bottomJieSuanBox{
+      display: flex;
+      position:fixed;
+      justify-content: space-between;
+      align-items: center;
+      height:88rpx;
+      bottom:0;
+      background-color:#efefef;
+      width:100%;
+      button{
+          height: 88rpx;
+          width: 250rpx;
+          border-radius: 0rpx;
+          background-color: #ff9e6e;
+          font-size: 30rpx;
+          line-height: 88rpx;
+          color: #fff;
+          letter-spacing: 4rpx;
+          margin: 0rpx;
+      }
+      view{
+          margin-left: 40rpx;
+          font-size: 33rpx;
+      }
+  }
+</style>

@@ -1,0 +1,94 @@
+<script>
+import wepy from 'wepy';
+import { recharge,orderWallet,WXPay } from '../../api/request'
+
+export default class walletRecharge extends wepy.page {
+    config = {
+        navigationBarTitleText: '充值',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        voucher:[],
+        selectElement:{},
+        open_id:'',
+    };
+    methods = {
+        selectPay(e){
+            let idx = e + 1;
+            this.voucher.forEach(element => {
+                if(element.id == idx){
+                    element.color = '#ff9e6e'
+                    this.selectElement = element
+                    this.$apply()
+                }else{
+                    element.color = '#ccc'
+                }
+            });
+        },
+        uploadComment(){
+            orderWallet(this.open_id,this.selectElement.id,Number(this.selectElement.total)*100).then((res)=>{
+                WXPay(this.open_id,res.data.data.order_id).then((result)=>{
+                    let str = result.data.data.jsskd.timestamp.toString()
+                    wx.hideLoading();
+                    wx.requestPayment({
+                        'timeStamp': str,
+                        'nonceStr':result.data.data.jsskd.nonceStr,
+                        'package': result.data.data.jsskd.package,
+                        'signType': result.data.data.jsskd.signType,
+                        'paySign': result.data.data.jsskd.paySign,
+                        success:(res)=>{
+                            wx.navigateTo({
+                                url: './beanPaySuccess'
+                            });
+                        },
+                    })
+                })
+            })
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.open_id = options.open_id
+        recharge(1).then((res)=>{
+            res.data.data.forEach(element => {
+                if(element.id == 1){
+                    element.color = '#ff9e6e'
+                }else{
+                    element.color = '#ccc'
+                }
+                
+            });
+            this.selectElement = res.data.data[0]
+            this.voucher = res.data.data
+            this.$apply()
+        })
+    };
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <!-- 选择支付方式 -->
+        <view class='titleBox' style='background-color:#fff;padding:45rpx 30rpx;'>
+            <view class='titleBox_line'></view>
+            <view>选择充值方式</view>
+        </view>
+        <view style='margin-bottom:40rpx;'>
+            <view class='voucherBox' wx:for='{{voucher}}' wx:key='' style='border-bottom:1px solid #f1f1f1;' @tap="selectPay({{index}})">
+                <view style='padding-right: 0rpx;flex:.1;display:flex;align-items:center;justify-content:center'><icon type="success" size="15" color='{{item.color}}'/></view>
+                <view style='flex.9;justify-content:flex-start'>充{{item.total}}送{{item.favourable}}</view>
+            </view>
+        </view>
+        <button class="preservation-btn btnUse"  @tap='uploadComment'>
+            确认支付
+        </button>
+    </view>
+</template>
+
+<style lang="less">
+/** less **/
+</style>

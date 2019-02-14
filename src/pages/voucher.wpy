@@ -1,0 +1,100 @@
+<script>
+import wepy from 'wepy';
+import coupon from '../components/Coupon'
+import { shopCoupon,userGet_coupon } from '../api/request'
+
+export default class voucher extends wepy.page {
+    config = {
+        navigationBarTitleText: '领券',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {
+        coupon:coupon
+    };
+
+    data = {
+        navbar: ['全部', '优惠券', '折扣券',"现金券"],
+        currentTab: 0,
+        couponData:[],
+        type:'-1',
+        shop_id:'',
+        noData: true,
+        open_id:'',
+    };
+    methods = {
+        navbarTap(e){
+            let type_ = e.currentTarget.dataset.idx - 1
+            this.currentTab = e.currentTarget.dataset.idx
+            shopCoupon(type_,this.shop_id).then((result)=>{
+                this.couponData = result.data.data
+                this.$apply()
+                if(!this.couponData.length){
+                    this.noData = false
+                    this.$apply()
+                }else{
+                    this.noData = true
+                    this.$apply()
+                }
+            })
+        }
+    };
+
+    events = {
+        getCoupon(id){
+            userGet_coupon(this.open_id,id).then((res)=>{
+                wx.showToast({
+                    title: res.data.message,
+                    icon: 'none'
+                })
+            })
+        }
+    };
+    onLoad(options) {
+        this.shop_id = options.shop_id
+        shopCoupon(this.type,options.shop_id).then((result)=>{
+            this.couponData = result.data.data
+            this.$apply()
+            if(!this.couponData.length){
+                this.noData = false
+                this.$apply()
+            }else{
+                this.noData = true
+                this.$apply()
+            }
+        })
+        wx.getStorage({
+            key: 'openId&token',
+            success: (res)=> {
+                this.open_id = res.data.open_id
+                this.$apply()
+            }
+        })
+    };
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <!--Tab菜单-->
+        <view class="navbar">
+            <!--循环-->
+            <view wx:for="{{navbar}}" data-idx="{{index}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap">
+                <view class="notice" wx:if="{{count[index]>0}}">{{count[index]}}</view>
+                {{item}}
+            </view>
+        </view>
+        <!-- 分类 -->
+        <coupon :syncTitle.sync="couponData"/>
+        <view hidden='{{noData}}' class="nodata">暂无可领取卡券 o(╯□╰)o</view>
+    </view>
+</template>
+
+<style lang="less">
+    .nodata{
+        font-size: 25rpx;
+        text-align: center;
+        color: #666;
+        margin-top: 145rpx;
+    }
+</style>

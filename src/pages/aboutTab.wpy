@@ -1,0 +1,349 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api';
+import token from '../api/getToken'
+import { appSetting } from '../api/request'
+
+export default class aboutTab extends wepy.page {
+    config = {
+        navigationBarTitleText: '个人中心',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+        disableScroll:true
+    };
+
+    data = {
+        login:false,
+        userInfo:{},
+        iconFunction:[
+            {
+                icon:'icon-douzi',
+                title:'金豆',
+            },
+            {
+                icon:'icon-icon-',
+                title:'收藏',
+            },
+            {
+                icon:'icon-qianbao',
+                title:'钱包',
+            },
+            {
+                icon:'icon-youhuiquan',
+                title:'卡券',
+            }
+        ],
+        aboutBottomBox:[
+            {
+                icon:'icon-shouji',
+                title:'手机绑定'
+            },
+            {
+                icon:'icon-xiangxidizhi',
+                title:'服务地址'
+            },
+            // {
+            //     icon:'icon-tigongfapiao',
+            //     title:'发票管理'
+            // },
+            {
+                icon:'icon-yudiancan0101',
+                title:'意见反馈'
+            },
+        ],
+        open_id:'',
+        windowHeight:'',
+        hotline:'',
+    };
+    methods = {
+        topOtherPages(e){
+            if(!e){
+                wx.navigateTo({
+                    url: '../activityIndex/personalCenter/goldBean?open_id='+this.open_id
+                })
+            }else if(e == 1){
+                wx.navigateTo({
+                    url: '../activityIndex/personalCenter/userCollections'
+                })
+            }else if (e == 2){
+                wx.navigateTo({
+                    url: '../activityIndex/personalCenter/userWallet?open_id='+this.open_id
+                })
+            }else if (e == 3){
+                wx.navigateTo({
+                    url: '../activityIndex/personalCenter/cardVoucher?open_id='+this.open_id
+                })
+            }
+        },
+        goOtherPage(e){
+            if(!e){
+                wepy.request({
+                    url: api.apiMall + '/user/bind_check',
+                    method: 'POST',
+                    data: {
+                        open_id: this.open_id
+                    }
+                }).then((res)=>{
+                    if(!res.data.data.binded_mobile){
+                        wx.navigateTo({
+                            url: './phoneLogin'
+                        })
+                    }else{
+                        wx.showToast({
+                            title: '您已绑定过手机号',
+                            icon: 'none'
+                        });
+                    }
+                });
+            }else if(e == 1){
+                wx.navigateTo({
+                    url: './severAddress'
+                })
+            }else if (e == 3){
+                wx.navigateTo({
+                    url: './invoicesAdimin'
+                })
+            }else if (e == 2){
+                wx.navigateTo({
+                    url: './feedbackFeedback?open_id='+this.open_id
+                })
+            }
+        },
+        loginPrompt(){
+            wx.showModal({
+                title: '微信授权',
+                content: '需授权微信登录方可使用该小程序，可点击图像下方刷新按钮进行微信授权操作',
+                showCancel: false
+            });
+        }
+    };
+
+    events = {};
+    onLoad() {
+        wx.getSystemInfo({
+            success:(res)=>{
+                this.windowHeight = Number(res.windowHeight)-125
+                this.$apply()
+            }
+        })
+        appSetting().then((res)=>{
+            this.hotline = res.data.data.hotline
+            this.$apply()
+        })
+    };
+    onShow(){
+        wx.getStorage({
+            key: 'userInfo',
+            success:(res)=>{
+                if(res.data.nickName){
+                    this.userInfo = res.data
+                    this.login = true
+                    this.$apply()
+                }
+            }
+        })
+        wx.getStorage({
+            key: 'openId&token',
+            success:(res)=>{
+                this.open_id = res.data.open_id,
+                this.$apply()
+            }
+        })
+    }
+    getuserinfo(e) {
+        let iv = e.detail.iv;
+        let encryptedData = e.detail.encryptedData;
+        if(e.detail.errMsg == 'getUserInfo:fail auth deny') {
+            wx.showModal({
+                title: '官方提示',
+                content:
+                '若不授权微信登录，则无法使用小程序。',
+                duration: 1000,
+                showCancel: false,
+                confirmText: '授权',
+                success: res => {
+                    wx.openSetting();
+                }
+            });
+        }else{
+            wx.showLoading({title: 'Loading...',mask: true});
+            wx.getStorage({
+                key: 'openId&token',
+                success: res => {
+                    wx.hideLoading();
+                    this.userInfo = e.detail.userInfo
+                    this.login = true
+                    this.open_id = res.data.open_id,
+                    this.$apply()
+                },
+                fail:()=>{
+                    token(iv, encryptedData).then((res)=>{
+                        wx.setStorage({
+                            key: 'userInfo',
+                            data: e.detail.userInfo
+                        })
+                        wx.hideLoading();
+                        wx.setStorageSync('openId&token',res.data.data);
+                        this.userInfo = e.detail.userInfo
+                        this.login = true
+                        this.open_id = res.data.data.open_id,
+                        this.$apply()
+                    })
+                }
+            });
+        }
+    }
+    makePhoneCall(){
+        wx.makePhoneCall({
+            phoneNumber: this.hotline
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='userIconBox'>
+            <image src= "{{login?userInfo.avatarUrl:'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%9C%AA%E7%99%BB%E5%BD%95.png'}}" class='userIcon'/>
+            <button hidden="{{login}}" class='againLoginIn' open-type='getUserInfo' @getuserinfo='getuserinfo'><image src='https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E5%88%B7%E6%96%B0.png'/></button>
+            <view class='nickName'>{{userInfo.nickName}}</view>
+        </view>
+        <view class='aboutMiddleBox'>
+            <view wx:for='{{iconFunction}}' wx:key='' class='iconFunction' @tap="topOtherPages({{index}})">
+                <icon class=' iconfont {{item.icon}}'/>
+                <view>{{item.title}}</view>
+            </view>
+        </view>
+        <view class='aboutBottomBox'>
+            <view wx:for='{{aboutBottomBox}}' wx:key='' class='aboutBottomBox_item' @tap="goOtherPage({{index}})">
+                <icon class=' iconfont {{item.icon}}'/>
+                <view class='aboutBottomBox_item_1'>{{item.title}}</view>
+                <view class='aboutBottomBox_item_2'>></view>
+            </view>
+        </view>
+        <button class='contactPhoneBox' @tap='makePhoneCall'>
+            联系客服：{{hotline}}
+        </button>
+        <view hidden="{{login}}" class='Mask' style='height:{{windowHeight}}px' @tap='loginPrompt'></view>
+    </view>
+</template>
+
+<style lang="less">
+    .userIconBox{
+        position: relative;
+        background-color: #ff9e6e;
+        height: 250rpx;
+        border-radius: 0 0 50% 50%;
+        .userIcon{
+            position: absolute;
+            left: 0;
+            right: 0;
+            margin: auto;
+            top: 45rpx;
+            width: 120rpx;
+            height: 120rpx;
+            border-radius: 50%;
+        }
+        .againLoginIn{
+            z-index: 1;
+            position: absolute;
+            left: 0;
+            right: 0;
+            margin: auto;
+            top: 170rpx;
+            height: 65rpx;
+            width: 65rpx;
+            background-color: rgba(0, 0, 0, 0);
+            line-height: 65rpx;
+            image{
+                position: absolute;
+                left: 0;
+                right: 0;
+                margin: auto;
+                width: 35rpx;
+                height: 30rpx;
+            }
+        }
+    }
+    .nickName{
+        color: #fff;
+        font-size: 24rpx;
+        height: 40rpx;
+        text-align: center;
+        position: absolute;
+        left: 0;
+        right: 0;
+        margin: auto;
+        top: 170rpx;
+    }
+    .aboutMiddleBox{
+        box-sizing: border-box;
+        padding: 30rpx 0rpx 20rpx 0rpx;
+        display: flex;
+        border-bottom: 1px solid #f1f1f1;
+        .iconFunction{
+            flex: .25;
+            display: flex;
+            color: #6e6e6e;
+            flex-direction: column;
+            align-items: center;
+            icon{
+                font-size: 50rpx;
+            }
+            view{
+                font-size: 24rpx;
+                color: #6e6e6e;
+                margin-top: 15rpx;
+            }
+        }
+    }
+    .aboutBottomBox{
+        box-sizing: border-box;
+        padding: 0 40rpx;
+        background-color: #fafafa;
+        .aboutBottomBox_item{
+            border-bottom: 1px solid #f1f1f1;
+            height: 80rpx;
+            display: flex;
+            align-items: center;
+            font-size: 25rpx;
+            color: #6e6e6e;
+            .aboutBottomBox_item_1{
+                flex: .9;
+                padding-left: 25rpx;
+            }
+            .aboutBottomBox_item_2{
+                flex: .1;
+                text-align: right;
+            }
+        }
+    }
+    .contactPhoneBox{
+        width: 350rpx;
+        height: 55rpx;
+        line-height: 55rpx;
+        text-align: center;
+        border: 1px solid #ff8d3d;
+        border-radius: 10rpx;
+        position: fixed;
+        left: 0;
+        right: 0;
+        margin: auto;
+        bottom: 88rpx;
+        color: #ff8d3d;
+        font-size: 24rpx;
+        background-color: rgba(0, 0, 0, 0);
+    }
+    .iconfont {
+        font-family:"iconfont" !important;
+        font-size:22px;
+        font-style:normal;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    .Mask{
+        position: absolute;
+        top: 125px;
+        width: 100%;
+    }
+</style>

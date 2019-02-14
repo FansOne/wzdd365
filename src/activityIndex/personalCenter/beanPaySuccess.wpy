@@ -1,0 +1,49 @@
+<script>
+import wepy from 'wepy';
+
+export default class beanPaySuccess extends wepy.page {
+    config = {
+        navigationBarTitleText: '支付成功',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {};
+    methods = {
+        killLists(){
+            wx.navigateBack({
+                delta: 1
+            });
+        },
+        killLists_(){
+            wx.navigateBack({
+                delta: 2
+            });
+        }
+    };
+
+    events = {};
+    onLoad() {};
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='topBox'>
+            <icon type="success" size="25" color='#ff9e6e'/>
+            <view class='title'>支付成功</view>
+            <view class='doubleBtn'>
+                <view @tap='killLists_'>查看余额</view>
+                <view @tap='killLists'>继续充值</view>
+            </view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .doubleBtn{
+        width: 337rpx;
+    }
+</style>

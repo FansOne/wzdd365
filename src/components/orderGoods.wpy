@@ -1,0 +1,105 @@
+<template lang="wxml">
+    <view wx:for='{{syncTitle}}' wx:key='' class='goodItemBox' @tap="goMerchantStore({{item.id}})">
+        <image src='{{item.logo_url}}' style='border:1rpx solid #f1f1f1'/>
+        <view class='goodItemBox_right'>
+            <view class='goodItemBox_right_price'>
+                <view class='goodItemBox_title'>{{item.title}}</view>
+                <view class='commentSpec'>
+  					下单时间：{{item.created_at}}
+  				</view>
+                <view class='goodItemBox_price'>
+                    <view class='goodItemBox_price_'>总价：￥ {{item.total_fee/100}}</view>
+                    <view class='goodItemBox_price_btn' wx:if='{{item.pay_status == 1}}'>
+                        <view class='goodItemBox_price_btn_1' hidden='{{item.comment_status == 1}}' @tap.stop ='evaluate({{item.id}},{{item}})'>评价</view>
+                        <view class='goodItemBox_price_btn_2' @tap.stop ='againPay({{item.shop_id}})'>再来一单</view>
+                    </view>
+                    <view class='goodItemBox_price_btn' wx:if='{{item.pay_status == 0}}'>
+                        <view class='goodItemBox_price_btn_2' wx:if='{{item.closed == 0}}'>立即付款</view>
+                        <view class='goodItemBox_price_btn_2' wx:else style="color: #b7b7b7;border: 1rpx solid #b7b7b7;">已失效</view>
+                    </view>
+                </view>
+            </view>
+        </view>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+export default class orderGoods extends wepy.component {
+    data = {
+    };
+    props = {
+        syncTitle: {
+            type: Array,
+            default: 'null'
+        }
+    };
+    methods = {
+        goMerchantStore(order_id){
+            wx.navigateTo({
+                url: '../activityIndex/activitys/orderDetails?order_id='+order_id
+            });
+        },
+        evaluate(order_id,item){
+            wepy.$instance.globalData.shopDetails = item
+            wx.navigateTo({
+                url: '../activityIndex/activitys/evaluate?order_id='+order_id
+            });
+        },
+        againPay(shop_id){
+            this.$emit('againPay',shop_id)
+        }
+    };
+
+    events = {};
+    onLoad(){
+    }
+    // Other properties
+}
+</script>
+
+<style lang="less">
+    .commentSpec{
+        font-size: 24rpx;
+        color: #969696;
+        margin: 17rpx 0;
+    }
+    .goodItemBox_price{
+        display: flex;
+        align-items: center;
+        height: 35rpx;
+        .goodItemBox_price_{
+            font-size: 24rpx;
+            color: #000;
+            flex: .3;
+        }
+        .goodItemBox_price_btn{
+            flex: .7;
+            display: flex;
+            justify-content: flex-end;
+            .goodItemBox_price_btn_1{
+                width: 103rpx;
+                height: 40rpx;
+                line-height: 40rpx;
+                text-align: center;
+                font-size: 24rpx;
+                color: gray;
+                background-color: #efefef;
+                border-radius: 7rpx;
+                padding: 0 8rpx;
+            }
+            .goodItemBox_price_btn_2{
+                width: 103rpx;
+                height: 38rpx;
+                line-height: 38rpx;
+                text-align: center;
+                font-size: 24rpx;
+                color: #ff9e6e;
+                border: 1rpx solid #ff9e6e;
+                border-radius: 7rpx;
+                margin-left: 25rpx;
+                padding: 0 4rpx;
+            }
+        }
+    }
+</style>

@@ -1,0 +1,278 @@
+<script>
+import wepy from 'wepy';
+import killGoods from '../../components/killGoods'
+import { userWallet,orderLottery } from '../../api/request'
+
+export default class killOrderConfirm extends wepy.page {
+    config = {
+        navigationBarTitleText: '订单确认',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {
+        killGoods:killGoods
+    };
+
+    data = {
+        stars: [0, 1, 2, 3, 4],
+        indexGoods:[],
+        voucher:[
+            {
+                title:'剩余金豆',
+                color:'#ff9e6e',
+                id:0
+            },
+            // {
+            //     title:'微信支付',
+            //     color:'#ccc',
+            //     id:1
+            // },
+        ],
+        gold:0,
+        userInfoBox:true,
+        userInfo:null,
+        shippmentIcon : '#ccc',
+        gold_balance:'',
+        open_id:''
+    };
+    methods = {
+        selectPay(e){
+            let idx = e;
+            this.voucher.forEach(element => {
+                if(element.id == idx){
+                    element.color = '#ff9e6e'
+                }else{
+                    element.color = '#ccc'
+                }
+            });
+        },
+        goSuccess(){
+            orderLottery(this.indexGoods[0].id,this.open_id,this.gold,this.indexGoods[0].shippment_fee,this.userInfo).then((res)=>{
+                let order_id = res.data.data.out_trade_no
+                if(order_id){
+                    wx.redirectTo({
+                        url: './luckDrawSuccess?out_trade_no='+order_id+'&gold='+this.gold+'&serial='+res.data.data.serial+'&created_at='+res.data.data.created_at
+                    });
+                }else{
+                    wx.showToast({
+                        title: '未知错误，支付失败',
+                        icon: 'none'
+                    })
+                }
+            })
+        },
+        shippment(){
+            if( this.indexGoods[0].shippment ){
+                if(!this.userInfoBox){
+                    this.shippmentIcon = '#ccc'
+                    this.userInfo = null
+                    this.userInfoBox = true
+                    this.$apply()
+                }else{
+                    wx.chooseAddress({
+                        success: (res)=> {
+                            // console.log(res)
+                            this.shippmentIcon = '#ff9e6e'
+                            this.userInfo = res
+                            this.userInfoBox = false
+                            this.$apply()
+                        },
+                        fail: ()=>{
+                            wx.openSetting()
+                        }
+                    })
+                }
+            }else{
+                wx.showToast({
+                    title: '该商户暂不支持物流配送',
+                    icon: 'none'
+                })
+            }
+        }
+    };
+    events = {};
+    onLoad(options) {
+        this.open_id = options.open_id
+        wx.getStorage({
+            key: 'selectBuy',
+            success: res => {
+                this.indexGoods.push(res.data)
+                this.gold =  res.data.gold
+                this.$apply()
+            }
+        });
+        // 获取用户金豆余额
+        userWallet(options.open_id,options.shop_id).then((res)=>{
+            this.gold_balance = res.data.data.gold_balance
+            this.$apply()
+        })
+    };
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='stepBox'>
+            <view class='stepBox_item'>
+                <view class='emptyCircle' style='border: 1rpx solid #ff9e6e;'><view style='background-color: #ff9e6e;'></view></view>
+                <view style='color:#ff9e6e'>选择商品</view>
+            </view>
+            <view class='stepBox_item'>
+                <view class='emptyCircle'><view></view></view>
+                <view>支付下单</view>
+            </view>
+            <view class='stepBox_item'>
+                <view class='emptyCircle'><view></view></view>
+                <view>到店提货</view>
+            </view>
+            <view class='line'></view>
+            <view class='line line2'></view>
+        </view>
+        <!-- 商品组件 -->
+        <killGoods :syncTitle.sync="indexGoods" :syncStar.sync="stars"/>
+        <!-- <view class='voucherBox'>
+            <view>抵用券</view>
+            <view><text>1</text>张可用 ></view>
+        </view> -->
+        <!-- 物流 -->
+        <view class='voucherBox' wx:key='' style='border-bottom:1px solid #f1f1f1;height:85rpx;' @tap="shippment">
+            <view style='display:flex;align-items:center;width:30rpx;flex:0;'><icon type="success" size="15" color='{{shippmentIcon}}'/></view>
+            <view style = 'flex:1;display:flex;align-items:center;justify-content:left;padding-left:15rpx;'>
+                <view>快递物流</view>
+                <view style='display:flex;flex:1;' wx:if="{{ indexGoods[0].shippment && shippmentIcon == '#ff9e6e' }}">
+                    <view style='color:#000;width:336rpx;padding-left:15rpx;flex:none;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;'></view>
+                    <view style='color:#000;flex:none;text-align:center'>收取运费 ￥{{indexGoods[0].shippment_fee}}</view>
+                </view>
+            </view>
+        </view>
+        <!-- 用户信息 -->
+        <view class='userInfoBox' hidden='{{userInfoBox}}'>
+            <view class='userInfoBox_top'>
+                <view>姓名：{{userInfo.userName}}</view>
+                <view><icon class='iconfont icon-dianhua' style='font-size:40rpx;line-height:70rpx;'/><text style='padding-left:10rpx;'>{{userInfo.telNumber}}</text></view>
+            </view>
+            <view class='userInfoBox_bottom'>地址：{{userInfo.cityName+userInfo.countyName+userInfo.detailInfo}}</view>
+        </view>
+        <!-- 选择支付方式 -->
+        <view class='titleBox' style='background-color:#fff;'>
+            <view class='titleBox_line'></view>
+            <view>支付方式</view>
+        </view>
+        <view class='voucherBox' wx:for='{{voucher}}' wx:key='' style='border-bottom:1px solid #f1f1f1;'>
+            <view>{{item.title}}<text wx:if='{{item.id == 0}}'>{{gold_balance}}</text><text wx:else>￥ 0.50</text></view>
+            <view style='padding-right: 10rpx;' @tap="selectPay({{index}})"><icon type="success" size="15" color='{{item.color}}'/></view>
+        </view>
+        <!-- 支付 -->
+        <view class='bottomPayBox'>
+            <view>实付：{{gold}}金豆</view>
+            <button @tap='goSuccess'>立即支付</button>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .stepBox{
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 140rpx;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 30rpx;
+        .stepBox_item{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            .emptyCircle{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                width: 30rpx;
+                height: 30rpx;
+                border: 1rpx solid #ccc;
+                view{
+                    height: 20rpx;
+                    width: 20rpx;
+                    background-color: #ccc;
+                    border-radius: 50%;
+                }
+            }
+            view:nth-child(2){
+                margin-top: 15rpx;
+                font-size: 24rpx;
+                color: #ccc;
+            }
+        }
+        .line{
+            position: absolute;
+            left: 106rpx;
+            top: 46rpx;
+            width: 240rpx;
+            height: 2rpx;
+            background-color: #ff9e6e;
+        }
+        .line2{
+            transform: translateX(295rpx);
+            background-color: #ccc;
+        }
+    }
+    .voucherBox{
+        display: flex;
+        align-items: center;
+        height: 65rpx;
+        box-sizing: border-box;
+        padding: 0 30rpx;
+        background-color: #fafafa;
+        view{
+            font-size: 24rpx;
+            color: #666;
+            flex: .5;
+        }
+        view:nth-child(1){
+            text{
+                display: inline-block;
+                color: red;
+                margin-left: 15rpx;
+                line-height: 65rpx;
+            }
+        }
+        view:nth-child(2){
+            display: flex;
+            justify-content: flex-end;
+            letter-spacing: 3rpx;
+            text{
+                color: #ff9e6e;
+            }
+        }
+    }
+    .bottomPayBox{
+        display: flex;
+        align-items: center;
+        box-sizing: border-box;
+        width: 100%;
+        padding-left: 30rpx;
+        height: 88rpx;
+        position: fixed;
+        bottom: 0;
+        background-color: #fafafa;
+        border-top: 1rpx solid #f1f1f1;
+        view{
+            flex: 1;
+            font-size: 30rpx;
+            color: #ff6f6e;
+        }
+        button{
+            height: 89rpx;
+            width: 240rpx;
+            background-color: #ff9e6e;
+            border-radius: 0;
+            font-size: 24rpx;
+            color: #fff;
+            line-height: 89rpx;
+            text-align: center;
+        }
+    }
+</style>

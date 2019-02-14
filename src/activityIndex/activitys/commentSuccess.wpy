@@ -1,0 +1,43 @@
+<script>
+import wepy from 'wepy';
+
+export default class commentSuccess extends wepy.page {
+    config = {
+        navigationBarTitleText: '评价成功',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {};
+    methods = {
+        killLists(){
+            wx.switchTab({
+                url:'../../pages/index'
+            });
+        },
+    };
+
+    events = {};
+    onLoad() {};
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='topBox'>
+            <icon type="success" size="25" color='#ff9e6e'/>
+            <view class='title'>感谢您的评价</view>
+            <view class='doubleBtn' style='justify-content:center;padding-top:30rpx;'>
+                <view @tap='killLists'>返回首页</view>
+            </view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .doubleBtn{
+        width: 337rpx;
+    }
+</style>

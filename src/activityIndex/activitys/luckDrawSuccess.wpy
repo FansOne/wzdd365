@@ -1,0 +1,125 @@
+<script>
+import wepy from 'wepy';
+import killGoods from '../../components/killGoods'
+
+export default class killPaySuccess extends wepy.page {
+    config = {
+        navigationBarTitleText: '支付成功',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {
+        killGoods:killGoods
+    };
+
+    data = {
+        stars: [0, 1, 2, 3, 4],
+        indexGoods:[],
+        options:{},
+    };
+    methods = {
+        luckDrawLists(){
+            wepy.navigateBack({
+                delta: 3
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.options = options
+        wx.getStorage({
+            key: 'selectBuy',
+            success: res => {
+                this.indexGoods.push(res.data)
+                this.$apply()
+            }
+        });
+    };
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='topBox'>
+            <icon type="success" size="25" color='#ff9e6e'/>
+            <view class='title'>支付成功</view>
+            <view class='doubleBtn'>
+                <view @tap='luckDrawLists'>再抽一次</view>
+            </view>
+        </view>
+        <!-- 商品组件 -->
+        <killGoods :syncTitle.sync="indexGoods" :syncStar.sync="stars"/>
+        <view class='messList'>支付总额<view>{{options.gold}}积分</view></view>
+        <view class='messList'>订单编号：{{options.out_trade_no}}</view>
+        <view class='messList'>下单时间：{{options.created_at}}</view>
+        <view class='messList'>抽奖编号：{{options.serial}}</view>
+        <!-- step -->
+        <view class='stepBoxs'>
+            <view class='stepBox_item'>
+                <view class='emptyCircle' style='border: 1px solid #ff9e6e;'><view style='background-color: #ff9e6e;'></view></view>
+                <view style='color:#ff9e6e;'>抽奖参与成功</view>
+            </view>
+            <view class='stepBox_item' style='margin:120rpx 0;'>
+                <view class='emptyCircle'><view></view></view>
+                <view>等待开奖</view>
+            </view>
+            <view class='stepBox_item'>
+                <view class='emptyCircle'><view></view></view>
+                <view>开奖成功，上门领奖</view>
+            </view>
+            <view class='line'></view>
+            <view class='line line1'></view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .topBox{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-sizing: border-box;
+        padding: 50rpx 0;
+        width: 100%;
+        height: 330rpx;
+        .title{
+            font-size: 30rpx;
+            padding-top: 20rpx;
+            color: #ff9e6e;
+        }
+    }
+    .doubleBtn{
+        width: 150rpx;
+        padding-top: 40rpx;
+        view{
+            font-size: 24rpx;
+            color: #bbb;
+            width: 150rpx;
+            height: 48rpx;
+            text-align: center;
+            line-height: 48rpx;
+            border-radius: 10rpx;
+        }
+        view{
+            background-color: #ff9e6e;
+            color: #fff;
+        }
+    }
+    .messList{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-sizing: border-box;
+        padding: 0 30rpx;
+        height: 64rpx;
+        background-color: #fafafa;
+        border-bottom: 1px solid #f1f1f1;
+        font-size: 24rpx;
+        color: #666;
+        view{
+            color: red;
+        }
+    }
+</style>

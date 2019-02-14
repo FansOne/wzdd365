@@ -1,0 +1,228 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api';
+import orderGoods from '../components/orderGoods';
+import token from '../api/getToken';
+import { orderDetail } from '../api/request';
+
+export default class orderTab extends wepy.page {
+    config = {
+        navigationBarTitleText: '订单',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+        enablePullDownRefresh:true,
+        backgroundTextStyle:'dark',
+    };
+    components = {
+        orderGoods:orderGoods
+        };
+    data = {
+        navbar: ['全部','点餐','外卖',"拼团",'团购','秒杀','商品','现金券'],
+        currentTab: 0,
+        scrollLeft:0,
+        type:-1,
+        page:1,
+        pageShow:false,
+        goodsLists:[],
+        noOrders:false,
+        noOrders_:false,
+        scrollHeight:'',
+        open_id : '',
+    };
+    methods = {
+        navbarTap(e){
+            this.noOrders = false
+            this.page = 1
+            this.goodsLists = []
+            this.currentTab = e.currentTarget.dataset.idx
+            if(e.currentTarget.dataset.idx>5){
+                if (e.currentTarget.dataset.idx ==6){
+                    this.type = 9
+                }else if (e.currentTarget.dataset.idx ==7){
+                    this.type = 10
+                }
+            }else{
+                this.type = Number(e.currentTarget.dataset.idx) - 1
+            }
+            this.orderLists()
+            if(this.currentTab == 4 && this.scrollLeft == 0){
+                this.scrollLeft = 275
+            }else if (this.currentTab>4 && this.currentTab<=8){
+                this.scrollLeft = 275+(Number(e.currentTarget.dataset.idx)*15)
+            }else if(this.currentTab > 8 ){
+                this.scrollLeft = 570
+            }else if (this.currentTab<4){
+                this.scrollLeft = 0
+            }else{
+                this.scrollLeft = 0
+            }
+        },
+        WXLogin(e){
+            let iv = e.detail.iv;
+            let encryptedData = e.detail.encryptedData;
+            token(iv, encryptedData).then((res)=>{
+                wx.setStorageSync('openId&token',res.data.data);
+                wx.setStorage({
+                    key: 'userInfo',
+                    data: e.detail.userInfo
+                })
+                this.pageShow = false
+                this.open_id = res.data.open_id
+                this.$apply()
+                this.orderLists()
+            })
+        },
+        getMore(){
+            this.page = this.page + 1
+            this.orderLists()
+        }
+    };
+    events = {
+        againPay:(shop_id)=>{
+            wx.navigateTo({
+                url: './merchantStore?merchant_id='+shop_id
+            });
+        }
+    };
+    onLoad() {
+        wx.getSystemInfo({
+            success:(res)=>{
+                this.scrollHeight = res.windowHeight - 44
+                this.$apply()
+            }
+        })
+        this.orderLists()
+    };
+    onShow(){
+        this.orderLists()
+    }
+    //下拉刷新
+    onPullDownRefresh(){
+        this.pageShow = true
+        this.$apply()
+        this.orderLists()
+    }
+    // 获取订单列表
+    orderLists(){
+        wx.getStorage({
+            key: 'openId&token',
+            success: (res)=> {
+                this.open_id = res.data.open_id
+                this.pageShow = false
+                this.$apply()
+                let data = {
+                    open_id: res.data.open_id,
+                    type: this.type,
+                    page: this.page
+                };
+                if(!this.noOrders){
+                    wx.showLoading({
+                        title: '加载中...',
+                        mask: true,
+                    });
+                    wepy.request({
+                        url: api.apiMall+'/user/orders',
+                        data: data,
+                        method: 'GET',
+                    }).then((res)=>{
+                        wx.hideLoading();
+                        wx.stopPullDownRefresh()
+                        if(!res.data.data.rows.length){
+                            this.noOrders = true
+                            this.$apply()
+                            if(this.page == 1){
+                                this.noOrders_ = true
+                                this.$apply()
+                            }
+                        }else{
+                            if(this.page == 1){
+                                this.pageShow = false
+                                this.noOrders = false
+                                this.goodsLists = res.data.data.rows
+                                this.$apply()
+                            }else{
+                                res.data.data.rows.forEach(element => {
+                                    this.goodsLists.push(element)
+                                    this.$apply()
+                                });
+                            }
+                        }
+                    });
+                }
+            },
+            fail:()=>{
+                this.pageShow = true
+                this.$apply()
+            }
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container' hidden='{{pageShow}}'>
+        <!--Tab菜单-->
+        <scroll-view scroll-x class="navbar scrollNav" scroll-left="{{scrollLeft}}" scroll-with-animation>
+            <!--循环-->
+            <view wx:for="{{navbar}}" data-idx="{{index}}" wx:key="unique" class="item {{currentTab==index ? 'active' : ''}}" @tap="navbarTap">
+                <view class="notice" wx:if="{{count[index]>0}}">{{count[index]}}</view>
+                {{item}}
+            </view>
+        </scroll-view>
+         <!-- 分类 -->
+         <scroll-view style='height:{{scrollHeight}}px' scroll-y lower-threshold='0' @scrolltolower='getMore'>
+             <view hidden="{{currentTab !== 0}}">
+                <view class="latelyOrder">
+                    <view class="latelyOrder_line"></view>
+                    <view class="latelyOrder_title">最近订单</view>
+                    <view class="latelyOrder_line"></view>
+                </view>
+            </view>
+            <orderGoods :syncTitle.sync="goodsLists"/>
+            <view wx:if='{{noOrders}}' class='noOrders'><text style="{{!goodsLists.length && page == 1?'display:inline-block;padding-top:365rpx;':''}}">{{!goodsLists.length && page == 1?'暂无相关订单 ╯︿╰':'已加载全部数据'}}</text></view>
+         </scroll-view>
+    </view>
+    <!-- 用户授权 -->
+    <view wx:if='{{pageShow}}'>
+        <button open-type='getUserInfo' @getuserinfo='WXLogin' class='WXLogin'>微信授权</button>
+        <view class='WXLogin_prompt'>您还未进行微信登录授权，授权后方可查看个人订单</view>
+    </view>
+</template>
+
+<style lang="less">
+    .latelyOrder{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 25rpx 0;
+        border-bottom: 1rpx solid #f1f1f1;
+        .latelyOrder_line{
+            width:50rpx;
+            height:5rpx;
+            background-color: #ff9e6e;
+        }
+        .latelyOrder_title{
+            font-size: 24rpx;
+            margin:0 20rpx;
+            color:#666;
+        }
+    }
+    .WXLogin{
+        margin-top: 420rpx;
+        width: 365rpx;
+        height: 80rpx;
+        line-height: 80rpx;
+        font-size: 30rpx;
+        letter-spacing: 2rpx;
+        box-shadow: 0 0 20rpx #aa4a1a;
+        background-color: #ff9e6e;
+        color: #fff;
+    }
+    .WXLogin_prompt{
+        color: rgb(114, 113, 113);
+        width: 100%;
+        text-align: center;
+        font-size: 24rpx;
+        margin-top: 35rpx;
+    }
+</style>

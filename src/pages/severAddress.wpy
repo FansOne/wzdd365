@@ -1,0 +1,354 @@
+<script>
+import wepy from 'wepy';
+
+export default class severAddress extends wepy.page {
+    config = {
+        navigationBarTitleText: '服务地址',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+		disableScroll:true
+    };
+    components = {};
+
+    data = {
+  		maskFlag:true,
+  		noBuy:false,
+  		userAddress:[],
+        
+        editIndex:0,
+        delBtnWidth:150//删除按钮宽度单位（rpx）,
+  	}
+  	onLoad(){
+  		let that = this;
+  		wx.getStorage({
+  			key:'userAddress',
+  			success:function(res){
+  				// that.userAddress.push(res.data)
+  				// that.$apply()
+  				for(let attr in res.data){
+  					that.userAddress.push(res.data[attr])
+  				}
+  				if(!res.data.length){
+  					that.noBuy = true
+  				}
+  			},
+  			fail:function(){
+  				that.noBuy = true
+  			}
+  		})
+  	}
+    components = {}
+    methods = {
+    	selectList(e){
+			console.log(1)
+    		let index = e.currentTarget.dataset.index;
+    		// console.log(this.userAddress[0])
+    		 for (var i = 0; i < this.userAddress.length;i++){
+    		 	this.userAddress.forEach(val=>{
+		        	val.idx = i
+		        	// console.log(val)
+		        })
+          		if (this.userAddress[i].idx == index){
+            		this.userAddress[i].selected = true;//当前点击的位置为true即选中
+          		}
+          		else{
+            		this.userAddress[i].selected =false;//其他的位置为false
+          		}
+        	}
+        	// console.log(this.userAddress)
+        	wx.setStorage({
+        		key:'userAddress',
+        		data:this.userAddress
+        	})
+        	wx.setStorage({
+        		key:'address',
+        		data:this.userAddress[index]
+        	})
+    	},
+    	deleteAddre(e){
+    		let that = this;
+    		wx.showModal({
+			  title: '确认删除收货地址吗？',
+			  success: function(res) {
+			    if (res.confirm) {
+			    	let index = e.currentTarget.dataset.index,
+		    			userAddress = that.userAddress;
+		    		userAddress.splice(index,1);
+		    		that.userAddress = userAddress;
+		    		wx.setStorage({
+		    			key:'userAddress',
+		    			data: that.userAddress
+		    		})
+		    		if(that.userAddress.length == 0){
+		    			that.noBuy = true
+		    		}
+		    		that.$apply()
+			    } else if (res.cancel) {
+			      	return
+			    }
+			  }
+			})
+    	},
+    	//增加收货地址
+    	wxAdd(){
+    		let that = this;
+    		wx.chooseAddress({
+			  success: function (res) {
+			  	// console.log(res)
+			  	that.userAddress.push(res)
+			  	that.$apply()
+			  	that.userAddress.forEach(val=>{
+		        	val.selected = false
+		        	// console.log(val)
+		        })
+		        // console.log(that.userAddress)
+		        wx.setStorage({
+		        	key:'userAddress',
+		        	data:that.userAddress
+		        })
+		        wx.redirectTo({
+				  url: 'severAddress'
+				})
+			  }
+			})
+    	},
+    }
+    //手指刚放到屏幕触发
+    touchS(e){
+        // console.log("touchS"+e);
+        //判断是否只有一个触摸点
+        if(e.touches.length==1){
+            //记录触摸起始位置的X坐标
+        this.startX = e.touches[0].clientX
+        }
+    }
+    //触摸时触发，手指在屏幕上每移动一次，触发一次
+    touchM (e){
+        // console.log(e);
+        var that = this
+        if(e.touches.length==1){
+            //记录触摸点位置的X坐标
+            var moveX = e.touches[0].clientX;
+            //计算手指起始点的X坐标与当前触摸点的X坐标的差值
+            var disX = that.startX - moveX;
+            //delBtnWidth 为右侧按钮区域的宽度
+            var delBtnWidth = that.delBtnWidth;
+            var txtStyle = "";
+            if(disX == 0 || disX < 0){//如果移动距离小于等于0，文本层位置不变
+                txtStyle = "0rpx";
+            }else if(disX > 0 ){//移动距离大于0，文本层left值等于手指移动距离
+                txtStyle = "-"+disX+"rpx";
+                if(disX>=delBtnWidth){
+                //控制手指移动距离最大值为删除按钮的宽度
+                txtStyle = "-"+delBtnWidth+"rpx";
+                }
+            }
+            //获取手指触摸的是哪一个item
+            var index = e.currentTarget.dataset.index;
+            var list = that.userAddress;
+            //将拼接好的样式设置到当前item中
+            list[index].txtStyle = txtStyle;
+            //更新列表的状态
+            that.userAddress = list
+            that.$apply()
+        }
+    }
+    touchE(e){
+        // console.log("touchE"+e);
+        var that = this
+        if(e.changedTouches.length==1){
+            //手指移动结束后触摸点位置的X坐标
+            var endX = e.changedTouches[0].clientX;
+            //触摸开始与结束，手指移动的距离
+            var disX = that.startX - endX;
+            var delBtnWidth = that.delBtnWidth;
+            //如果距离小于删除按钮的1/2，不显示删除按钮
+            var txtStyle = disX > delBtnWidth/2 ? "-"+delBtnWidth+"rpx":"0rpx";
+            //获取手指触摸的是哪一项
+            var index = e.currentTarget.dataset.index;
+            var list = that.userAddress;
+            list[index].txtStyle = txtStyle;
+            //更新列表的状态
+            that.userAddress = list
+            that.$apply()
+        }
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+  		<view wx:if="{{noBuy}}">
+	        <view class='noBuy-box'>
+	            您还没添加收货地址哦!
+	        </view>
+      	</view>
+      	<view wx:else class = 'content-box'>
+            <view class='address-box' wx:for="{{userAddress}}" wx:key="index">
+				<view class='movebox' style="transform:translateX({{item.txtStyle}});"  @touchstart="touchS" @touchmove="touchM" @touchend="touchE"  data-index="{{index}}">
+					<view class='addressTop'>
+						<view class='namePhone'>
+							<view>{{item.userName}}</view>
+							<view>{{item.telNumber}}</view>
+						</view>
+						<view class='whereAddre'>
+							<view>{{item.provinceName+item.cityName+item.countyName}}</view>
+						</view>      
+					</view>
+					<!-- 设置默认 -->
+					<view class='bianij'>
+						<icon wx:if="{{item.selected}}" type="success" size ='17' color="orange" @tap="selectList" data-index="{{index}}" />
+						<icon wx:else type="success" @tap="selectList" data-index="{{index}}" size ='17' color="rgb(163,163,163)"/>
+						<view wx:if="{{item.selected}}">默认地址</view>
+						<view wx:else>设为默认</view>
+					</view>
+				</view>
+				<view class="posit" @tap='deleteAddre' data-index="{{index}}">
+					<icon class='iconfont icon-lajitong'/>
+				</view>
+            </view>   
+  		</view>
+  		<view class='bottom-nav' @tap='wxAdd'>
+  			<view>添加收货地址</view>
+  		</view>
+    </view>
+  </view>
+</template>
+
+<style lang="less">
+    page{
+		border-top:1px solid #efeff4;
+		background-color: #ffffff;
+	}
+	.noBuy-box{
+		width: 350rpx;
+		height: 50rpx;
+		text-align: center;
+		line-height: 50rpx;
+		position: absolute;
+		left: 0;
+		right: 0;
+		margin: auto;
+		top: 500rpx;
+		color: #747474;
+		letter-spacing: 3rpx;
+		font-size: 30rpx;
+	}
+	.address-box{
+		position: relative;
+		overflow: hidden;
+		height: 180rpx;
+		line-height: 180rpx
+	}
+    .address-box .movebox{
+		position: absolute;
+		top: 0;
+		background-color: #fff;
+		width: 100%;
+		z-index: 3;
+		transition: left 0.2s ease-in-out;
+		overflow: hidden;
+		white-space:nowrap;
+		text-overflow:ellipsis;
+        box-sizing: border-box;
+        padding: 0 30rpx;
+		height: 180rpx;
+        border-bottom:1px solid #efeff4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        .addressTop{
+            flex: 1;
+        }
+		.namePhone{
+			display: flex;
+			flex-direction: row;
+            font-size: 27rpx;
+            line-height: 66rpx;
+			font-weight: bold;
+		}
+		.whereAddre{
+			display: flex;
+            flex-direction: row;
+			font-size: 27rpx;
+			line-height: 66rpx;
+			view:nth-child(1){
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 1;
+                overflow: hidden;
+			}
+		}
+	}
+	.bianij{
+		display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        width: 150rpx;
+		view{
+            margin-left: 10rpx;
+            font-size: 26rpx;
+            color: #747474;
+		}
+		icon{
+			display: flex;
+			align-items: center;
+		}
+    }
+    .removeAddress{
+        position: absolute;
+        height: 180rpx;
+        width: 150rpx;
+        right: -150rpx;
+        background-color: red;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        image{
+            width: 85rpx;
+            height: 100rpx;
+        }
+    }
+	/*底部导航*/
+	.bottom-nav{
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		position: fixed;
+		bottom: 0;
+		height: 100rpx;
+		width: 100%;
+		view{
+			color: #fff;
+			font-size: 30rpx;
+			width:100%;
+			text-align: center;
+			line-height: 100rpx;
+			height: 100%; 
+			background-color: #ff9e6e;
+			letter-spacing: 5rpx;
+		}
+	}
+	.content-box{
+		margin-bottom: 165rpx;
+	}
+	.posit{
+		z-index: 2;
+		position: absolute;
+		right: 0;
+		top: 0;
+		background-color: #f40;
+		height: 180rpx;
+		display: flex;
+		font-size: 30rpx;
+		width: 150rpx;
+		line-height: 180rpx;
+		color: #fff;
+		justify-content: center;
+		align-items: center;
+		icon{
+			font-size:60rpx;
+			color:#fff;
+		}
+	}
+</style>

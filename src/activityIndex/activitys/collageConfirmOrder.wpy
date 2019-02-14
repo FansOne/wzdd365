@@ -1,0 +1,411 @@
+<script>
+import wepy from 'wepy';
+import killGoods from '../../components/killGoods'
+import { userWallet,orderTeambuy,orderJoin_teambuy,WXPay } from '../../api/request'
+import {noConcurrent} from 'fancy-mini/lib/decorators';
+export default class collageConfirmOrder extends wepy.page {
+    config = {
+        navigationBarTitleText: '订单确认',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {
+        killGoods:killGoods
+    };
+
+    data = {
+        indexGoods:[],
+        //发票展示
+  		piao:false,
+        ticketMessage:{},
+        voucher:[
+            {
+                title:'钱包支付',
+                color:'#ff9e6e',
+                id:0
+            },
+            {
+                title:'微信支付',
+                color:'#ccc',
+                id:1
+            },
+        ],
+        options:{},
+        wallet_balance:'',
+        userInfoBox:true,
+        shippmentIcon : '#ccc',
+        userInfo:null,
+        // 订单商品总价
+        totalFeel:'',
+        pay_type:0,
+    };
+    methods = {
+        selectPay(e){
+            let idx = e;
+            this.voucher.forEach(element => {
+                if(element.id == idx){
+                    element.color = '#ff9e6e'
+                }else{
+                    element.color = '#ccc'
+                }
+                if(!e){
+                    this.pay_type = 0
+                    this.$apply()
+                }else{
+                    this.pay_type = 1
+                    this.$apply()
+                }
+            });
+            console.log(this.pay_type)
+        },
+        @noConcurrent
+        async goSuccess(){
+            let open_id = this.options.open_id;
+
+            if(this.options.parent_order_id == 'undefined'){
+                orderTeambuy(Number(this.options.shop_id),open_id,this.totalFeel*100,this.pay_type,this.indexGoods[0].shippment_fee,this.userInfo).then((res)=>{
+                    let orderId_WXPay = res.data.data  // 订单ID、是否需要微信支付
+                    if(res.data.status=='fail'){
+                        wx.hideLoading();
+                        wx.showToast({
+                            title: res.data.message,
+                            icon: 'none'
+                        })
+                        setTimeout(() => {
+                            wx.navigateBack({
+                                delta: 2
+                            });
+                        }, 1200);
+                    }
+                    // 选择支付方式（钱包支付）
+                    if(!this.pay_type){
+                        wx.showModal({
+                            title: '支付确认',
+                            content: '是否使用钱包支付￥'+this.totalFeel,
+                            success:(res)=>{
+                                if(res.confirm){
+                                    wx.showLoading({
+                                        title: '发起支付...',
+                                        mask: true,    
+                                    });
+                                    if(!orderId_WXPay.needWxPay){   //钱包充足，不需发起微信支付
+                                        wx.hideLoading();
+                                        wx.redirectTo({
+                                            url: './collagePaySucess?payTotal='+this.totalFeel+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+this.pay_type+'&order_id='+orderId_WXPay.order_id+'&shop_id='+this.options.shop_id
+                                        });
+                                    }else{      //钱包余额不足，发起微信支付
+                                        WXPay(open_id,orderId_WXPay.order_id).then((result)=>{
+                                        let str = result.data.data.jsskd.timestamp.toString()
+                                        wx.hideLoading();
+                                            wx.requestPayment({
+                                                'timeStamp': str,
+                                                'nonceStr':result.data.data.jsskd.nonceStr,
+                                                'package': result.data.data.jsskd.package,
+                                                'signType': result.data.data.jsskd.signType,
+                                                'paySign': result.data.data.jsskd.paySign,
+                                                success:(res)=>{
+                                                    wx.redirectTo({
+                                                        url: './collagePaySucess?payTotal='+this.totalFeel+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+this.pay_type+'&order_id='+orderId_WXPay.order_id+'&shop_id='+this.options.shop_id
+                                                    });
+                                                },
+                                                fail:(res)=>{
+                                                    wx.showToast({
+                                                        title: '已取消支付',
+                                                        icon: 'none',
+                                                        duration: 1500,
+                                                        mask: false,
+                                                    });
+                                                }
+                                            })
+                                        })
+                                    }
+                                }
+                            }
+                        })
+                    }else{  //选择支付方式（微信支付）
+                        wx.showLoading({
+                            title: '发起支付...',
+                            mask: true,    
+                        });
+                        WXPay(open_id,orderId_WXPay.order_id).then((result)=>{
+                            let str = result.data.data.jsskd.timestamp.toString()
+                            wx.hideLoading();
+                            wx.requestPayment({
+                                'timeStamp': str,
+                                'nonceStr':result.data.data.jsskd.nonceStr,
+                                'package': result.data.data.jsskd.package,
+                                'signType': result.data.data.jsskd.signType,
+                                'paySign': result.data.data.jsskd.paySign,
+                                success:(res)=>{
+                                    wx.redirectTo({
+                                        url: './collagePaySucess?payTotal='+this.totalFeel+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+this.pay_type+'&order_id='+orderId_WXPay.order_id+'&shop_id='+this.options.shop_id
+                                    });
+                                },
+                                fail:(res)=>{
+                                    wx.showToast({
+                                        title: '已取消支付',
+                                        icon: 'none',
+                                        duration: 1500,
+                                        mask: false,
+                                    });
+                                    setTimeout(() => {
+                                        wx.switchTab({
+                                            url: '../../pages/orderTab'
+                                        });
+                                    }, 1300);
+                                }
+                            })
+                        })
+                    }
+                }) 
+            }else{
+                orderJoin_teambuy(Number(this.options.shop_id),this.options.parent_order_id,open_id,this.totalFeel*100,this.pay_type,this.indexGoods[0].shippment_fee,this.userInfo).then((res)=>{
+                    let orderId_WXPay = res.data.data  // 订单ID、是否需要微信支付
+                    if(res.data.status=='fail'){
+                        wx.hideLoading();
+                        wx.showToast({
+                            title: res.data.message,
+                            icon: 'none'
+                        })
+                        setTimeout(() => {
+                            wx.navigateBack({
+                                delta: 2
+                            });
+                        }, 1200);
+                    }
+                    // 选择支付方式（钱包支付）
+                    if(!this.pay_type){
+                        wx.showModal({
+                            title: '支付确认',
+                            content: '是否使用钱包支付￥'+this.totalFeel,
+                            success:(res)=>{
+                                if(res.confirm){
+                                    wx.showLoading({
+                                        title: '发起支付...',
+                                        mask: true,    
+                                    });
+                                    if(!orderId_WXPay.needWxPay){   //钱包充足，不需发起微信支付
+                                        wx.redirectTo({
+                                            url: './collagePaySucess?payTotal='+this.totalFeel+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+this.pay_type+'&order_id='+orderId_WXPay.order_id+'&shop_id='+this.options.shop_id
+                                        });
+                                    }else{      //钱包余额不足，发起微信支付
+                                        WXPay(open_id,orderId_WXPay.order_id).then((result)=>{
+                                        let str = result.data.data.jsskd.timestamp.toString()
+                                        wx.hideLoading();
+                                            wx.requestPayment({
+                                                'timeStamp': str,
+                                                'nonceStr':result.data.data.jsskd.nonceStr,
+                                                'package': result.data.data.jsskd.package,
+                                                'signType': result.data.data.jsskd.signType,
+                                                'paySign': result.data.data.jsskd.paySign,
+                                                success:(res)=>{
+                                                    wx.redirectTo({
+                                                        url: './collagePaySucess?payTotal='+this.totalFeel+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+this.pay_type+'&order_id='+orderId_WXPay.order_id+'&shop_id='+this.options.shop_id
+                                                    });
+                                                },
+                                                fail:(res)=>{
+                                                    wx.showToast({
+                                                        title: '已取消支付',
+                                                        icon: 'none',
+                                                        duration: 1500,
+                                                        mask: false,
+                                                    });
+                                                    setTimeout(() => {
+                                                        wx.navigateTo({
+                                                            url: './orderDetails?order_id='+orderId_WXPay.order_id
+                                                        });
+                                                    }, 1300);
+                                                }
+                                            })
+                                        })
+                                    }
+                                }
+                            }
+                        })
+                    }else{  //选择支付方式（微信支付）
+                        wx.showLoading({
+                            title: '发起支付...',
+                            mask: true,    
+                        });
+                        WXPay(open_id,orderId_WXPay.order_id).then((result)=>{
+                            let str = result.data.data.jsskd.timestamp.toString()
+                            wx.hideLoading();
+                            wx.requestPayment({
+                                'timeStamp': str,
+                                'nonceStr':result.data.data.jsskd.nonceStr,
+                                'package': result.data.data.jsskd.package,
+                                'signType': result.data.data.jsskd.signType,
+                                'paySign': result.data.data.jsskd.paySign,
+                                success:(res)=>{
+                                    wx.redirectTo({
+                                        url: './collagePaySucess?payTotal='+this.totalFeel+'&out_trade_no='+orderId_WXPay.out_trade_no+'&pay_type='+this.pay_type+'&order_id='+orderId_WXPay.order_id+'&shop_id='+this.options.shop_id
+                                    });
+                                },
+                                fail:(res)=>{
+                                    wx.showToast({
+                                        title: '已取消支付',
+                                        icon: 'none',
+                                        duration: 1500,
+                                        mask: false,
+                                    });
+                                    setTimeout(() => {
+                                        wx.navigateTo({
+                                            url: './orderDetails?order_id='+orderId_WXPay.order_id
+                                        });
+                                    }, 1300);
+                                }
+                            })
+                        })
+                    }
+                })
+            }
+        },
+        cardLists(){
+            wx.navigateTo({
+                url: './cardLists'
+            });
+        },
+        shippment(){
+            if( this.indexGoods[0].shippment ){
+                if(!this.userInfoBox){
+                    this.shippmentIcon = '#ccc'
+                    this.userInfo = null
+                    this.userInfoBox = true
+                    this.totalFeel = this.indexGoods[0].price
+                    this.$apply()
+                }else{
+                    wx.chooseAddress({
+                        success: (res)=> {
+                            // console.log(res)
+                            this.shippmentIcon = '#ff9e6e'
+                            this.userInfo = res
+                            this.userInfoBox = false
+                            this.totalFeel = (Number(this.indexGoods[0].shippment_fee) + Number(this.totalFeel)).toFixed(2)
+                            this.$apply()
+                        },
+                        fail: ()=>{
+                            wx.openSetting()
+                        }
+                    })
+                }
+            }else{
+                wx.showToast({
+                    title: '该商户暂不支持物流配送',
+                    icon: 'none'
+                })
+            }
+        }
+    };
+    switchChange(e){
+        let _helf = this;
+        if(e.detail.value){
+            wx.chooseInvoiceTitle({
+                success(res) {
+                    _helf.piao = true
+  					_helf.ticketMessage = res
+  					_helf.$apply()
+                }
+            })
+        }else{
+            _helf.ticketMessage ={}
+            _helf.piao = false
+            _helf.$apply()
+        }
+    }
+    events = {};
+    onLoad(options) {
+        this.options = options
+        wx.getStorage({
+            key: 'selectBuy',
+            success: res => {
+                this.indexGoods.push(res.data)
+                this.totalFeel = res.data.price
+                this.$apply()
+            }
+        });
+        // 获取用户钱包余额
+        userWallet(options.open_id,options.shop_id).then((res)=>{
+            this.wallet_balance = res.data.data.wallet_balance
+            this.$apply()
+        })
+    };
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='stepBox'>
+            <view class='stepBox_item'>
+                <view class='emptyCircle' style='border: 1rpx solid #ff9e6e;'><view style='background-color: #ff9e6e;'></view></view>
+                <view style='color:#ff9e6e'>选择商品</view>
+            </view>
+            <view class='stepBox_item'>
+                <view class='emptyCircle'><view></view></view>
+                <view>支付下单</view>
+            </view>
+            <view class='stepBox_item'>
+                <view class='emptyCircle'><view></view></view>
+                <view>到店提货</view>
+            </view>
+            <view class='line'></view>
+            <view class='line line2'></view>
+        </view>
+        <!-- 商品组件 -->
+        <killGoods :syncTitle.sync="indexGoods"/>
+        <!-- 物流 -->
+        <view class='voucherBox' wx:key='' style='border-bottom:1px solid #f1f1f1;height:85rpx;' @tap="shippment">
+            <view style='display:flex;align-items:center;width:30rpx;flex:0;'><icon type="success" size="15" color='{{shippmentIcon}}'/></view>
+            <view style = 'flex:1;display:flex;align-items:center;justify-content:left;padding-left:15rpx;'>
+                <view>快递物流</view>
+                <view style='display:flex;flex:1;' wx:if="{{ indexGoods[0].shippment && shippmentIcon == '#ff9e6e' }}">
+                    <view style='color:#000;width:336rpx;padding-left:15rpx;flex:none;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;'></view>
+                    <view style='color:#000;flex:none;text-align:center'>收取运费 ￥{{indexGoods[0].shippment_fee}}</view>
+                </view>
+            </view>
+        </view>
+        <!-- 用户信息 -->
+        <view class='userInfoBox' hidden='{{userInfoBox}}'>
+            <view class='userInfoBox_top'>
+                <view>姓名：{{userInfo.userName}}</view>
+                <view><icon class='iconfont icon-dianhua' style='font-size:40rpx;line-height:70rpx;'/><text style='padding-left:10rpx;'>{{userInfo.telNumber}}</text></view>
+            </view>
+            <view class='userInfoBox_bottom'>地址：{{userInfo.cityName+userInfo.countyName+userInfo.detailInfo}}</view>
+        </view>
+        <!-- 选择支付方式 -->
+        <view class='titleBox' style='background-color:#fff;'>
+            <view class='titleBox_line'></view>
+            <view>选择支付方式</view>
+        </view>
+        <view class='voucherBox' wx:for='{{voucher}}' wx:key='' style='border-bottom:1px solid #f1f1f1;'>
+            <view>{{item.title}}<text wx:if='{{item.id == 0}}'>￥ {{wallet_balance}}</text></view>
+            <view style='padding-right: 10rpx;' @tap="selectPay({{index}})"><icon type="success" size="15" color='{{item.color}}'/></view>
+        </view>
+        <!-- <view class='voucherBox'>
+            <view>开具发票</view>
+            <view><switch bindchange="switchChange" color='#ff9e6e'/></view>
+        </view>
+        <view wx:if="{{piao}}" class='show-faPiao'>
+            <view wx:if="{{ticketMessage.type ==1}}">
+                <view>类型：个人</view>
+                <view>名称：{{ticketMessage.title}}</view>
+            </view>
+            <view wx:else>
+                <view>类型：公司</view>
+                <view style='border-top:none;border-bottom:none'>名称：{{ticketMessage.title}}</view>
+                <view>税号：{{ticketMessage.taxNumber}}</view>
+            </view>
+        </view> -->
+        <!-- 支付 -->
+        <view class='bottomPayBox'>
+            <view>实付款：￥{{totalFeel}}</view>
+            <button @tap='goSuccess'>立即支付</button>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    switch{
+        zoom: .5;
+    }
+</style>

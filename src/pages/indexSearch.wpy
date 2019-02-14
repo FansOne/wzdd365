@@ -1,0 +1,180 @@
+<script>
+import wepy from 'wepy';
+import api from '../api/api'
+import indexGoods from '../components/indexGoods';
+
+export default class indexSearch extends wepy.page {
+    config = {
+        navigationBarTitleText: '搜索',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+        onReachBottomDistance:70,
+    };
+    components = {
+        indexGoods:indexGoods
+    };
+
+    data = {
+        hotSearch:[],
+        userInput:'',
+        //店铺
+        indexGoods:[],
+        stars: [0, 1, 2, 3, 4],
+        page:1,
+        localWhere:{},
+        showGoods:true
+    };
+    methods = {
+        searchMerchant(e){
+            this.userInput = e.detail.value
+        },
+        searchStore(e){
+            wx.showLoading({
+                title: '正在搜索...',
+                mask: true,
+            });
+            this.getUserInput()
+        },
+        areaItemSelect(e){
+            wx.showLoading({
+                title: '正在搜索...',
+                mask: true,
+            });
+            this.hotSearch.forEach(element => {
+                if(element.id == e){
+                    element.select = true
+                    this.userInput = element.tag
+                    this.$apply()
+                    this.getUserInput()
+                }else{
+                    element.select = false
+                }
+            });
+        },
+    };
+
+    events = {};
+    onLoad() {
+        wx.getStorage({
+            key: 'localWhere',
+            success: res => {
+                this.localWhere = res.data
+                this.$apply()
+            }
+        });
+        this.getHotSearch()
+    };
+    //获取城市列表
+    async getHotSearch(){
+        wx.getLocation({
+            type: 'wgs84',
+            success: (res)=> {
+                const url = api.apiMall + '/search/hot';
+                wepy.request({
+                    url: url,
+                    method: 'GET'
+                }).then((res)=>{
+                    res.data.data.forEach((element,index) => {
+                        element.id = index
+                    });
+                    this.hotSearch = res.data.data
+                    this.$apply()
+                })
+            }
+        })
+    }
+    //根据搜索关键词获取商户信息
+    async getUserInput(){
+        wx.getLocation({
+            type: 'wgs84',
+            success: (res)=> {
+                const url = api.apiMall + '/shop/search';
+                const data = {
+                    tag:this.userInput,
+                    page:'1',
+                    lng: this.localWhere.lng,
+                    lat: this.localWhere.lat
+                }
+                wepy.request({
+                    url: url,
+                    method: 'GET',
+                    data:data
+                }).then((res)=>{
+                    wx.hideLoading();
+                    res.data.data.rows.forEach(element => {
+                        element.indexGoods = true
+                        element.minimum_charge = element.minimum_charge.toFixed(2)
+                    });
+                    if(this.page == 1){
+                        this.showGoods = false
+                        this.indexGoods = res.data.data
+                        this.$apply()
+                    }else{
+                        res.data.data.rows.forEach(element => {
+                            this.indexGoods.rows.push(element)
+                            this.$apply()
+                        });
+                    }
+                    this.hotSearch.forEach(element => {
+                        element.select = false
+                    })
+                })
+            }
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <!-- 搜索框 -->
+        <view class='inputSearchBox'>
+            <input placeholder='周边好店全搜罗' @input='searchMerchant' @confirm ='searchStore'><icon class='iconfont icon-sousuo'/></input>
+        </view>
+        <!-- 热门搜索 -->
+        <view class='titleBox'>
+            <view class='titleBox_line'></view>
+            <view>热门搜索</view>
+        </view>
+        <view class='areaBox'>
+            <view wx:for='{{hotSearch}}' wx:key="" class='areaItem'>
+                <view class="areaItem_ {{item.select?'areaItem_select':''}}" @tap='areaItemSelect({{item.id}})'>{{item.tag}}</view>
+            </view>
+        </view>
+        <scroll-view scroll-y style='height:910rpx;' hidden='{{showGoods}}'>
+            <indexGoods :syncTitle.sync="indexGoods" :syncStar.sync="stars"/>
+        </scroll-view>
+    </view>
+</template>
+
+<style lang="less">
+    .inputSearchBox{
+        height: 120rpx;
+        background-color: #ff9e6e;
+        box-sizing: border-box;
+        padding: 0 30rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        input{
+            box-sizing: border-box;
+            padding: 0 15rpx 0 35rpx;
+            line-height: 88rpx;
+            font-size: 24rpx;
+            height: 65rpx;
+            width: 100%;
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            icon{
+                font-size: 30rpx;
+                color: #666;
+            }
+        }
+    }
+    .areaItem_select{
+        color: #fff !important;
+        background-color: #ff9e6e !important;
+    }
+</style>

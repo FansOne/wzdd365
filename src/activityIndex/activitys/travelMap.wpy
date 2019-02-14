@@ -1,0 +1,109 @@
+<script>
+import wepy from 'wepy';
+import travelMapListItem from '../../components/travelMapListItem';
+import { mapCatelog,map } from '../../api/request'
+
+export default class travelMap extends wepy.page {
+    config = {
+        navigationBarTitleText: '出行地图',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {
+        travelMapListItem:travelMapListItem
+    };
+
+    data = {
+        topIconList:[],
+        // contantList
+        travelMapListItem:[],
+        type:0,
+        page:1
+    };
+    methods = {
+        switchLists(e){
+            this.type = e
+            if(e == 4){
+                wx.showToast({
+                    title: '敬请期待',
+                    icon: 'none'
+                });
+            }else{
+                map(this.type,this.page).then((result)=>{
+                    this.travelMapListItem = result.data.data.rows
+                    this.$apply()
+                })
+            }
+            
+        }
+    };
+
+    events = {};
+    onLoad() {
+        mapCatelog().then((res)=>{
+            this.topIconList = res.data.data
+            this.$apply()
+            map(this.type,this.page).then((result)=>{
+                console.log(result.data.data.rows)
+                this.travelMapListItem = result.data.data.rows
+                this.$apply()
+            })
+        })
+    };
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='topIconList'>
+            <view wx:for='{{topIconList}}' wx:key='' class='topIconList_' @tap='switchLists({{item.id}})'>
+                <!-- <image src='{{item.icon}}'/> -->
+                <view class='iconBg' style='background-color:{{item.color}}'><icon class='iconfont {{item.icon_url}}'/></view>
+                <view class='titles'>{{item.title}}</view>
+            </view>
+        </view>
+        <view class='contantBox'>
+            <!-- 列表组件 -->
+            <travelMapListItem :syncTitle.sync="travelMapListItem"/>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .topIconList{
+        box-sizing: border-box;
+        padding: 20rpx 0rpx;
+        height: 180rpx;
+        width: 100%;
+        display: flex;
+        border-bottom: 1rpx solid #f1f1f1;
+        .topIconList_{
+            width: 25%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            .iconBg{
+                height: 100rpx;
+                width: 100rpx;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                icon{
+                    color: #fff;
+                    font-size: 45rpx;
+                }
+            }
+            .titles{
+                padding-top: 15rpx;
+                font-size: 18rpx;
+            }
+        }
+    }
+    .contantBox{
+        box-sizing: border-box;
+        padding: 0rpx 40rpx;
+        margin-top: 20rpx;
+    }
+</style>

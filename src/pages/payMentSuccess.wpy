@@ -1,0 +1,137 @@
+<script>
+import wepy from 'wepy';
+import { free } from '../api/request';
+
+export default class payMentSuccess extends wepy.page {
+    config = {
+        navigationBarTitleText: '支付成功',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        options:{},
+    };
+    methods = {
+        applicationRefund(){
+            wx.navigateBack({
+                delta: 2
+            });
+        },
+        free(){
+            free(this.options.open_id,this.options.order_id).then((res)=>{
+                console.log(res.data)
+                if(res.data.data.total==0){
+                    wx.showToast({
+                        title: '感谢参与',
+                        icon: 'none'
+                    })
+                    setTimeout(() => {
+                        wx.navigateBack({
+                            delta: 2
+                        });
+                    }, 1000);
+                }else{
+                    wx.showModal({
+                        title:'恭喜中奖',
+                        content:'恭喜抽中免单金额'+'￥'+res.data.data.total+'，中奖金额已返还至钱包余额',
+                        showCancel:false,
+                        success :(res)=>{
+                            if(res.confirm){
+                                wx.redirectTo({
+                                    url: '../activityIndex/personalCenter/userWallet?open_id='+this.options.open_id
+                                })
+                            }
+                        }
+                    })
+                }
+            })
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.options = options
+    };
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='topBox'>
+            <icon type="success" size="25" color='#ff9e6e'/>
+            <view class='title'>支付成功</view>
+            <view class='doubleBtn' style="width:150rpx">
+                <view @tap='applicationRefund' class="merchant">门店首页</view>
+            </view>
+        </view>
+        <view class="title">
+            <view></view>
+            <view>抽奖赢取现金</view>
+            <view></view>
+        </view>
+        <view class='chouJiang'>
+            <image src='https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/payMentChouJiang.png' @tap='free'/>
+        </view>
+        <view class="title">
+            <view></view>
+            <view>抽奖规则</view>
+            <view></view>
+        </view>
+        <!-- step -->
+        <view class='stepBoxs'>
+            <view class='stepBox_item'>
+                <view class='emptyCircle' style='border: 1px solid #ff9e6e;'><view style='background-color: #ff9e6e;'></view></view>
+                <view style='color:#666;'>买单支付成功</view>
+            </view>
+            <view class='stepBox_item' style='margin:80rpx 0;'>
+                <view class='emptyCircle' style='border: 1px solid #ff9e6e;'><view style='background-color: #ff9e6e;'></view></view>
+                <view style='color:#666;'>参与抽奖</view>
+            </view>
+            <view class='stepBox_item'>
+                <view class='emptyCircle' style='border: 1px solid #ff9e6e;'><view style='background-color: #ff9e6e;'></view></view>
+                <view style='color:#666;'>本次消费按比例返还至会员钱包余额</view>
+            </view>
+            <view class='line' style="height:66rpx"></view>
+            <view class='line line1' style="background-color:#ff9e6e;height:66rpx;transform:translateY(122rpx);"></view>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    .merchant{
+        background-color: #ff9e6e;
+        color: #fff !important;
+        border: 1px solid #ff9e6e !important;
+    }
+    .title{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        view:nth-child(1){
+            width: 110rpx;
+            height: 2rpx;
+            background-color: #ff9e6e;
+        }
+        view:nth-child(2){
+            font-size: 28rpx;
+            margin: 0 15rpx;
+        }
+        view:nth-child(3){
+            width: 110rpx;
+            height: 2rpx;
+            background-color: #ff9e6e;
+        }
+    }
+    .chouJiang{
+        width: 100%;
+        padding: 50rpx 0;
+        display: flex;
+        justify-content: center;
+        image{
+            width: 670rpx;
+            height: 214rpx;
+        }
+    }
+</style>

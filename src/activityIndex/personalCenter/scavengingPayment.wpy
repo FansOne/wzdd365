@@ -1,0 +1,66 @@
+<script>
+import wepy from 'wepy';
+import { userQr } from '../../api/request'
+
+export default class scavengingPayment extends wepy.page {
+    config = {
+        navigationBarTitleText: '扫码付款',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        qr_url:'',
+    };
+    methods = {
+        previewImage(){
+            wx.previewImage({
+            urls: [
+                this.qr_url
+            ]
+            })
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        userQr(options.open_id).then((res)=>{
+            this.qr_url = res.data.data.qr_url
+            this.$apply()
+        })
+    };
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='titleBox'>
+            <view class='titleBox_line'></view>
+            <view>向商家付款</view>
+        </view>
+        <!-- 二维码 -->
+        <image src='{{qr_url}}' @tap='previewImage'/>
+        <view class='prompt'>付款时出示此码</view>
+    </view>
+</template>
+
+<style lang="less">
+    image{
+        width: 600rpx;
+        height: 600rpx;
+        position: absolute;
+        left: 0;
+        right: 0;
+        margin: auto;
+        margin-top: 40rpx;
+    }
+    .prompt{
+        position: absolute;
+        top: 755rpx;
+        color: #ccc;
+        font-size: 30rpx;
+        text-align: center;
+        width: 100%;
+    }
+</style>

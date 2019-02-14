@@ -1,0 +1,56 @@
+<script>
+import wepy from 'wepy';
+import killGoods from '../../components/killGoods'
+import util from '../../api/time'
+
+export default class circleDrawZJ extends wepy.page {
+    config = {
+        navigationBarTitleText: '',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {
+        killGoods:killGoods
+    };
+
+    data = {
+        indexGoods:[],
+        options:{},
+        time:''
+    };
+    methods = {
+        killLists(){
+            wx.redirectTo({
+                url: './circleDrawLottery'
+            });
+        },
+    };
+
+    events = {};
+    onLoad(options) {
+        this.time = util.formatTime(new Date());
+        this.options = wepy.$instance.globalData.allData_ZJ
+        this.indexGoods.push(this.options.bingo)
+    };
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view class='topBox'>
+            <icon class='iconfont icon-wodezhongjiang2' style='color:#ff9e6e;font-size:94rpx;'/>
+            <view class='title'>恭喜中奖</view>
+            <view class='doubleBtn' style='justify-content:center;padding-top:25rpx;'>
+                <view @tap='killLists' style='background-color:#ff9e6e;color:#fff'>再抽一次</view>
+            </view>
+        </view>
+        <!-- 商品组件 -->
+        <killGoods :syncTitle.sync="indexGoods"/>
+        <view class='messList'>订单编号：{{options.out_trade_no}}</view>
+        <view class='messList'>中奖时间：{{time}}</view>
+    </view>
+</template>
+
+<style lang="less">
+</style>

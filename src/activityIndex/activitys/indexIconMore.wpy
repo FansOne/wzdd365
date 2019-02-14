@@ -1,0 +1,79 @@
+<script>
+import wepy from 'wepy';
+import api from '../../api/api';
+
+export default class indexIconMore extends wepy.page {
+    config = {
+        navigationBarTitleText: '更多行业',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        iconClass:[],
+    };
+    methods = {
+        goIndustry:(e)=>{
+            if(e.id == 6){
+                wx.navigateTo({
+                    url: './travelMap'
+                });
+            }else if(e.id == 8){
+                wx.navigateTo({
+                    url: './life'
+                });
+            }else{
+                wx.navigateTo({
+                    url: '../../pages/industry?industry_id='+e.id+'&title='+e.title,
+                });
+            }
+            
+        },
+    };
+
+    events = {};
+    onLoad() {
+        this.getIndustry()
+    };
+    //获取行业列表
+        async getIndustry(){
+            const url = api.apiMall + '/industry';
+            const data = {
+                type:'0',
+            };
+            wepy.request({
+                url: url,
+                method: 'GET',
+                data: data,
+            }).then((res)=>{
+                // wx.hideNavigationBarLoading() 
+                // wx.stopPullDownRefresh()
+                // this.pageShow = false
+                this.iconClass = res.data.data
+                this.$apply()
+                // console.log(res.data.data)
+            })
+        }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+         <!-- 行业 -->
+        <view class='iconClassBox'>
+            <block wx:for='{{iconClass}}' wx:key=''>
+                <view class='iconClassBox_item' style='width:25%' @tap="goIndustry({{item}})">
+                    <view class='imagebg' style='background-color:{{item.color}};width:105rpx;height:105rpx;'>
+                        <icon class='iconfont {{item.icon_url}}' style='font-size:50rpx;'/>
+                    </view>
+                    <view>{{item.title}}</view>
+                </view>
+            </block>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+/** less **/
+</style>

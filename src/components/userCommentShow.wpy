@@ -1,0 +1,95 @@
+<template lang="wxml">
+    <view wx:for='{{syncTitle}}' wx:key='' class='userCommentShow_item' wx:for-item="item">
+        <image src='{{item.avatar_url}}' class='userCommentShow_itemIcon'/>
+        <view class='userCommentShow_item_right'>
+            <view class='userCommentShow_item_rightName'>
+                <view>{{item.nickname}}</view>
+                <view>{{item.content}}</view>
+            </view>
+             <!-- 星 -->
+            <view class='userCommentShow_item_rightStart'>
+                <view class='commentSpec'>
+                    <block wx:for="{{syncStar}}" wx:key='idx' wx:for-item="items">
+                        <image class="star-image" style="width:30rpx;height:30rpx;margin-right:5rpx;" src="{{(item.rate > items) || !item.rate ?'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F1.png' : 'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F.png'}}"/>
+                    </block>
+                </view>
+                <view>{{item.created_at}}</view>
+            </view>
+        </view>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import strar from './strat';
+export default class userCommentShow extends wepy.component {
+    components = {
+        strar:strar
+    };
+    data = {
+        stars: [0, 1, 2, 3, 4],
+    };
+    methods = {
+    };
+    props = {
+        syncTitle: {
+            type: Array,
+            default: 'null'
+        },
+        syncStar:{
+            type: Array,
+            default: 'null'
+        }
+    };
+    onLoad(){}
+}
+</script>
+
+<style lang="less">
+    .userCommentShow_item{
+        box-sizing: border-box;
+        padding: 20rpx 30rpx;
+        display: flex;
+        align-items: center;
+        height: 120rpx;
+        border-bottom: 1px solid #f1f1f1;
+        .userCommentShow_itemIcon{
+            height: 70rpx;
+            width: 70rpx;
+            border-radius: 50%;
+        }
+        .userCommentShow_item_right{
+            flex: 1;
+            height: 70rpx;
+            display: flex;
+            align-items: center;
+            .userCommentShow_item_rightName{
+                flex: .6;
+                height: 70rpx;
+                padding-left: 25rpx;
+                view:nth-child(1){
+                    font-size: 24rpx;
+                    line-height: 40rpx;
+                }
+                view:nth-child(2){
+                    font-size: 18rpx;
+                    line-height: 35rpx;
+                    color:#686868;
+                }
+            }
+            .userCommentShow_item_rightStart{
+                height: 70rpx;
+                flex: .4;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                view:nth-child(2){
+                    font-size: 18rpx;
+                    color:#686868;
+                    line-height: 20rpx;
+                    padding-right: 6rpx;
+                }
+            }
+        }
+    }
+</style>

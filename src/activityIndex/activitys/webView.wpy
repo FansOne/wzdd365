@@ -1,0 +1,23 @@
+<script>
+import wepy from 'wepy';
+
+export default class webView extends wepy.page {
+    config = {};
+
+    data = {
+        src:''
+    };
+    methods = {};
+
+    events = {};
+    onLoad(options) {
+        this.src = options.src
+    };
+}
+</script>
+
+<template lang="wxml">
+    <view class="container">
+        <web-view src="{{src}}"></web-view>
+    </view>
+</template>

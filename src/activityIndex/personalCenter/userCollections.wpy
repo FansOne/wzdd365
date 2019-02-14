@@ -1,0 +1,125 @@
+<script>
+import wepy from 'wepy';
+import api from '../../api/api';
+
+export default class userCollections extends wepy.page {
+    config = {
+        navigationBarTitleText: '我的收藏',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        //收藏商品
+        indexGoods:[],
+        stars: [0, 1, 2, 3, 4],
+        open_id:'',
+    };
+    methods = {
+        // 删除收藏
+        cancelCollection(e){
+            wx.showModal({
+                title: '提示',
+                content: '是否取消对该店铺收藏',
+                success: (res)=> {
+                    if (res.confirm) {
+                        this.cancelCollection(e)
+                    }
+                }
+            })
+        },
+        goMerchantStore(e){
+            wx.navigateTo({
+                url: '../../pages/merchantStore?merchant_id='+e
+            });
+        }
+    };
+
+    events = {};
+    onLoad() {
+        wx.getStorage({
+            key: 'openId&token',
+            success: res => {
+                this.open_id = res.data.open_id
+                this.$apply()
+                this.collectionShopp(res.data.open_id)
+            }
+        });
+    };
+    // 获取会员收藏店铺
+    collectionShopp(open_id){
+        const data = {
+            open_id: open_id
+        };
+        const url = api.apiMall + '/user/favorite';
+        wepy.request({
+            url: url,
+            method: 'GET',
+            data: data
+        }).then((res)=>{
+            // console.log(res.data.data)
+            res.data.data.rows.forEach(element => {
+                element.minimum_charge = element.minimum_charge.toFixed(2)
+            });
+            this.indexGoods = res.data.data
+            this.$apply()
+        })
+    }
+    // 会员取消收藏店铺
+    cancelCollection(favorite_id){
+        const data = {
+            open_id: this.open_id,
+            favorite_id:favorite_id
+        };
+        const url = api.apiMall + '/user/unfavorite';
+        wepy.request({
+            url: url,
+            method: 'POST',
+            data: data
+        }).then((res)=>{
+            // console.log(res)
+            wx.showToast({
+                title: '已取消该收藏',
+                icon: 'success',
+                success:()=>{
+                    this.collectionShopp(this.open_id)
+                }
+            });
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <view wx:for='{{indexGoods.rows}}' wx:key='' class='goodItemBox' wx:for-index="idx" wx:for-item="itemName" @tap="goMerchantStore({{itemName.id}})">
+            <image src="{{itemName.logo_url}}"/>
+            <view class='goodItemBox_right'>
+                <view class='goodItemBox_right_price'>
+                    <view class='goodItemBox_title'>{{itemName.title}}</view>
+                    <view class='commentSpec'>
+                        <block wx:for="{{stars}}" wx:key='idx' wx:for-item="items">
+                        <image class="star-image" style="width:26rpx;height:26rpx;margin-right:5rpx" src="{{(itemName.rate > items) || !itemName.rate ?'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F1.png' : 'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F.png'}}"/>
+                        </block>
+                    </view>
+                    <view class='goodItemBox_price'>￥ {{itemName.minimum_charge}}起</view>
+                </view>
+                <view class='juLi' @tap.stop="cancelCollection({{itemName.favorite_id}})">
+                    取消收藏
+                </view>
+            </view>
+        </view>
+        <view wx:if='{{indexGoods.rows.length == 0}}' class="nodata">您还未收藏任何店铺</view>
+    </view>
+</template>
+
+<style lang="less">
+    .nodata{
+        color: #666;
+        font-size: 25rpx;
+        margin-top: 365rpx;
+        width: 100%;
+        text-align: center;
+    }
+</style>

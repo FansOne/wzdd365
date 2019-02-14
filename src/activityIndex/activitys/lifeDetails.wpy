@@ -1,0 +1,255 @@
+<script>
+import wepy from 'wepy';
+import api from '../../api/api';
+
+export default class lifeDetails extends wepy.page {
+    config = {
+        navigationBarTitleText: '详情',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        imgUrls: [
+            'http://img02.tooopen.com/images/20150928/tooopen_sy_143912755726.jpg',
+            'http://img06.tooopen.com/images/20160818/tooopen_sy_175866434296.jpg',
+            'http://img06.tooopen.com/images/20160818/tooopen_sy_175833047715.jpg'
+        ],
+        allData:{},
+        btnShow:true,
+        options:{},
+    };
+    methods = {
+        infoComplain(){ //投诉发布信息
+            wepy.request({
+                url: api.apiMall+'/info/complain',
+                method: 'POST',
+                data: {
+                    info_id: this.info_id
+                }
+            }).then((res)=>{
+                if(res.data.status == 'ok'){
+                    wx.showToast({
+                        title: '投诉成功',
+                        icon: 'success',
+                        duration: 1500,
+                        mask: false,
+                    });
+                    setTimeout(() => {
+                        wx.navigateBack({
+                            delta: 1
+                        });
+                    }, 1500);
+                }else{
+                    wx.showToast({
+                        title: '未知错误，投诉失败',
+                        icon: 'none',
+                        duration: 1500,
+                        mask: false,
+                    });
+                }
+            });
+        },
+        //图片预览
+        previewImage(e){
+            wx.previewImage({
+                current: this.allData.pics[e], 
+                urls: this.allData.pics
+            })
+        },
+        navigate_to(path){
+            let navigatePath = path.indexOf('https');
+            if(navigatePath == -1){
+                wx.navigateTo({
+                    url: path
+                })
+            }else{
+                wx.navigateTo({
+                    url: './webView?src='+path
+                })
+            }
+        },
+        guantie(info_id,open_id){
+            wx.showModal({
+                title: '提示',
+                content: '是否关闭此条发布信息',
+                showCancel: true,
+                cancelText: '取消',
+                cancelColor: '#000000',
+                confirmText: '确定',
+                confirmColor: '#3CC51F',
+                success: (result) => {
+                    if(result.confirm){
+                        wepy.request({
+                          url: api.apiMall+'/info/finish',
+                          data: {
+                              info_id:info_id,
+                              open_id:open_id
+                          },
+                          method: 'POST'
+                        }).then(()=>{
+                            this.requirement(this.options.info_id,this.options.open_id)
+                        });
+                        
+                    }
+                }
+            });
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        this.options = options
+        this.info_id = options.info_id
+        this.requirement(options.info_id,options.open_id)
+    };
+    //获取分类信息详情
+    requirement(info_id,userOpen_id){
+        wepy.request({
+            url: api.apiMall+'/info/detail',
+            method: 'GET',
+            data: {
+                info_id:info_id
+            }
+        }).then((res)=>{
+            if(userOpen_id == res.data.data.open_id && res.data.data.finished == 0){
+                this.btnShow = false
+                this.$apply()
+            }else{
+                this.btnShow = true
+                this.$apply()
+            }
+            this.allData = res.data.data
+            this.$apply()
+        });
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <!-- 顶部轮播banner -->
+        <swiper indicator-dots autoplay interval="4000" circular>
+            <block wx:for="{{imgUrls}}" wx:key=''>
+                <swiper-item>
+                <image src="{{item}}" class="slide-image" mode='widthFix' @tap='navigate_to({{item.path}})'/>
+                </swiper-item>
+            </block>
+        </swiper>
+        <!-- 发布者信息 -->
+        <view class='authorBox'>
+            <image src='{{allData.avatar_url}}'/>
+            <view class='author_right'>
+                <view>
+                    <view class="nickName">{{allData.nickname}}</view>
+                    <view class='finished' style="{{allData.finished == 0?'background-color:#ff9e6e;color:#fff':'background-color:#f3f3f3;color:#999'}}">{{allData.finished == 0 ?'进行中':'已完成'}}</view>
+                </view>
+                <view>发布于： {{allData.created_at}}</view>
+            </view>
+        </view>
+        <view class='messDetails'><view>信息详情</view><view style='color:#f40' @tap='infoComplain'>投诉</view></view>
+        <view class='textPrompt'>{{allData.summary}}</view>
+        <view wx:for='{{allData.pics}}' class='pics' wx:key=''>
+            <image src='{{item}}' @tap='previewImage({{index}})'/>
+        </view>
+        <view class="guanTie" hidden='{{btnShow}}'>
+            <button class="userRelease" @tap="guantie({{allData.id}},{{allData.open_id}})">关贴</button>
+        </view>
+    </view>
+</template>
+
+<style lang="less">
+    swiper{
+        height: 357rpx;
+        image{
+            width: 100%;
+        }
+    }
+    .authorBox{
+        display: flex;
+        align-items: center;
+        box-sizing: border-box;
+        padding: 20rpx 30rpx;
+        height: 150rpx;
+        image{
+            height: 100rpx;
+            width: 100rpx;
+            border-radius: 50%;
+        }
+        .author_right{
+            flex: 1;
+            padding-left: 30rpx;
+            view:nth-child(1){
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                .nickName{
+                    font-size: 30rpx;
+                }
+                .finished{
+                    font-size: 18rpx;
+                    border-radius: 7rpx;
+                    padding: 0 8rpx;
+                }
+            }
+            view:nth-child(2){
+                font-size: 24rpx;
+                color: #999;
+                margin-top: 10rpx;
+            }
+        }
+    }
+    .messDetails{
+        display: flex;
+        justify-content: space-between;
+        box-sizing: border-box;
+        padding: 0 30rpx;
+        width: 100%;
+        height: 88rpx;
+        line-height: 88rpx;
+        font-size: 24rpx;
+        color: #666;
+        background-color: #fafafa;
+        border-top: 1rpx solid #f1f1f1;
+        border-bottom: 1rpx solid #f1f1f1;
+    }
+    .textPrompt{
+        font-size: 24rpx;
+        color: #666;
+        box-sizing: border-box;
+        padding: 20rpx 40rpx;
+    }
+    .pics{
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10rpx 40rpx;
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        image{
+            width: 100%;
+        }
+    }
+    .guanTie{
+        position: fixed;
+        bottom: 0rpx;
+        width: 100%;
+        height: 104rpx;
+        background-color: #f8f8f8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        .userRelease{
+            letter-spacing: 2rpx;    
+            width: 312rpx;
+            height: 64rpx;
+            line-height: 64rpx;
+            font-size: 30rpx;
+            color: #fff;
+            background-color: #ff9e6e;
+            border-radius: 20rpx;
+            box-shadow: 0 0 10rpx #ff9e6e;
+        }
+    }
+</style>

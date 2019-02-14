@@ -1,0 +1,88 @@
+<template lang="wxml">
+    <view class='containers'>
+        <view class='coupon_box'  wx:for='{{syncTitle}}' wx:key='' style="background-image: url('https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/kuan.png'),linear-gradient({{item.color}}, {{item.color}});background-blend-mode: lighten;" @tap="get_coupon({{item.id}})">
+            <view class="coupon_left">
+                <view>{{item.title}}</view>
+                <view wx:if='{{!item.type}}'>满{{item.discount_min}}元减{{item.discount_price}}元</view>
+                <view wx:if = '{{item.type == 1}}'>部分商品{{item.discount_price}}折优惠</view>
+                <view wx:if = '{{item.type == 2}}'>￥{{item.par_value}}现金券</view>
+                <view wx:if ='{{!item.expired}}'>无使用期限限制</view>
+                <view wx:else>有效期：{{item.started_at}}至{{item.started_at}}</view>
+            </view>
+            <view class="coupon_right">
+                <view>立即</view>
+                <view>领取</view>
+            </view>
+        </view>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+export default class Coupon extends wepy.component {
+    components = {};
+
+    data = {};
+    methods = {
+        get_coupon(id){
+            this.$emit('getCoupon',id)
+        }
+    };
+    props = {
+        syncTitle: {
+            type: Array,
+            default: 'null'
+        }
+    };
+    events = {};
+}
+</script>
+
+<style lang="less">
+    .containers{
+        padding: 30rpx;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .coupon_box{
+        display: flex;
+        align-items: center;
+        box-sizing: border-box;
+        padding: 25rpx 0rpx 25rpx 65rpx;
+        margin-bottom: 35rpx;
+        width: 601rpx;
+        height: 153rpx;
+        background-image: url('https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/kuan.png');
+        background-size: 100%;
+        .coupon_left{
+            flex: 1;
+            view:nth-child(1){
+                font-size: 30rpx;
+                color: #fff;
+            }
+            view:nth-child(2){
+                font-size: 24rpx;
+                color: #fff;
+                margin: 7rpx 0;
+            }
+            view:nth-child(3){
+                font-size: 18rpx;
+                color: #fff;
+            }
+        }
+        .coupon_right{
+            box-sizing: border-box;
+            width: 135rpx;
+            height: 100%;
+            border-left: 1rpx solid #ccc;
+            font-size: 30rpx;
+            color: #fff;
+            text-align: center;
+            view:nth-child(1){
+                margin-top: 8rpx;
+                margin-bottom: 10rpx;
+            }
+        }
+    }
+</style>

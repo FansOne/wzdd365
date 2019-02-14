@@ -1,0 +1,238 @@
+<script>
+import wepy from 'wepy';
+import request from '../api/request'
+import lib from '../api/currentTime'
+import token from '../api/getToken'
+
+let array = [];
+let peopleNum = [];
+export default class subscribe extends wepy.page {
+    config = {
+        navigationBarTitleText: '门店预约',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        allData:[],
+        date: '',
+        time: '',
+        index: 0,
+        indexPeople: 0,
+        array: [],
+        peopleNum:[],
+        leng:0,
+        disabled:true,
+        btnUse:false,
+        valueName:'',
+        valuePhone:'',
+        merchant_id:'',
+        open_id:''
+    };
+    methods = {
+        sectionValue(e){
+            let leng = e.detail.value.length
+            this.leng = leng
+        },
+        getuserinfo(e){
+            let iv = e.detail.iv;
+            let encryptedData = e.detail.encryptedData;
+            if(!this.open_id){
+                token(iv, encryptedData).then((res)=>{
+                    wx.setStorageSync('openId&token',res.data.data);
+                    wx.setStorage({
+                        key: 'userInfo',
+                        data: e.detail.userInfo
+                    })
+                    this.open_id = res.data.data.open_id;
+                    this.$apply()
+                    wx.showToast({
+                        title: '授权成功',
+                        icon: 'success'
+                    });
+                })
+            }
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        // console.log(lib.formatTime(new Date()).format_ymd)
+        this.date = lib.formatTime(new Date()).format_ymd
+        this.time = lib.formatTime(new Date()).format_hm;
+        this.merchant_id = options.merchant_id
+        //获取门店桌位
+        request.merchantTable(this.merchant_id).then((res)=>{
+            // console.log(res.data)
+            this.allData = res.data.data
+            this.$apply()
+            res.data.data.forEach(element => {
+                if(element.type){
+                    element.type = '包间'
+                }else{
+                    element.type = '大堂'
+                }
+                array.push(element.type+'-'+element.title+'('+'最低消费'+'￥'+element.minimum_charge+')')
+            });
+            this.array = array
+            this.$apply()
+            //初始就餐人数
+            let startNum = this.allData[0].people;
+            for (let i = 1; i <= startNum; i++) {
+                peopleNum.push(i+'人')
+            }
+            this.peopleNum = peopleNum
+            this.$apply()
+        })
+        wx.getStorage({
+            key: 'openId&token',
+            success: (res)=>{
+                this.open_id  = res.data.open_id
+                this.$apply()
+            }
+        })
+    };
+    onUnload(){
+        array = [];
+        peopleNum = [];
+    }
+    computed = {
+      Disable () {
+          if(this.valueName && this.valuePhone){
+              this.disabled = false
+              this.btnUse = true
+          }else if( !this.valueName || !this.valuePhone){
+              this.disabled = true
+              this.btnUse = false
+          }
+      }
+    }
+    bindDateChange(e){
+        this.date = e.detail.value
+    }
+    bindTimeChange(e){
+        this.time = e.detail.value
+    }
+    bindPickerChange(e){
+        this.index = e.detail.value
+        peopleNum.splice(0,peopleNum.length);
+        this.peopleNum.splice(0,this.peopleNum.length);
+        let startNum_ = this.allData[this.index].people;
+        for (let i = 1; i <= startNum_; i++) {
+            peopleNum.push(i+'人')
+        }
+        this.peopleNum = peopleNum
+    }
+    PickerChange(e){
+        this.indexPeople = e.detail.value
+    }
+    userNameInput(e){
+        this.valueName = e.detail.value
+    }
+    userPhoneInput(e){
+        this.valuePhone = e.detail.value
+    }
+    //表单提交
+    formSubmit(e){
+        let subscribe_date = e.detail.value.date;
+        let subscribe_time = e.detail.value.time;
+        let shop_room_id = this.allData[e.detail.value.zuoWei].id;
+        let people = Number((this.peopleNum[e.detail.value.peopleNum]).replace('人',''));
+        let contact = e.detail.value.peopleName;
+        let mobile = e.detail.value.peoplePhone;
+        let desc = e.detail.value.textarea;
+        if(this.open_id){
+            request.subscribe(this.merchant_id,this.open_id,subscribe_date,subscribe_time,shop_room_id,people,contact,mobile,desc).then((res)=>{
+                // console.log(res.data.message)
+                wx.showModal({
+                    title: '门店预约',
+                    content: res.data.message,
+                    showCancel:false,
+                    success:(res)=>{
+                        if(res.confirm){
+                            wx.navigateBack({
+                                delta: 1
+                            });
+                        }
+                    }
+                })
+            })
+        }
+    }
+}
+
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <form bindsubmit="formSubmit">
+            <view class='seleteDay'>
+                <view class='seleteDay_item'>选择日期</view>
+                <view class='pickerBox'>
+                    <picker mode="date" value="{{date}}" start="{{date}}" bindchange="bindDateChange" name="date">
+                        <view class="picker">{{date}}</view>
+                    </picker>
+                    <view>></view>
+                </view>
+            </view>
+            <view class='seleteDay'>
+                <view class='seleteDay_item'>预计到店时间</view>
+                <view class='pickerBox'>
+                    <picker mode="time" value="{{time}}" start="{{time}}" end="22:30" bindchange="bindTimeChange" name="time">
+                        <view class="picker">{{time}}</view>
+                    </picker>
+                    <view>></view>
+                </view>
+            </view>
+            <view class='seleteDay'>
+                <view class='seleteDay_item'>选择桌位类型</view>
+                <view class='pickerBox'>
+                    <picker bindchange="bindPickerChange" value="{{index}}" range="{{array}}" name="zuoWei">
+                        <view class="picker">{{array[index]}}</view>
+                    </picker>
+                    <view>></view>
+                </view>
+            </view>
+            <view class='titleBox'>
+                <view class='titleBox_line'></view>
+                <view>联系人信息</view>
+            </view>
+            <view class='seleteDay'>
+                <view class='seleteDay_item'>选择就餐人数</view>
+                <view class='pickerBox'>
+                    <picker bindchange="PickerChange" value="{{indexPeople}}" range="{{peopleNum}}" name="peopleNum">
+                        <view class="picker">{{peopleNum[indexPeople]}}</view>
+                    </picker>
+                    <view>></view>
+                </view>
+            </view>
+            <view class='seleteDay'>
+                <view class='seleteDay_item'>联系人</view>
+                <view class='pickerBox' style='justify-content:flex-start'>
+                    <input placeholder='联系人姓名' placeholder-style='color:#969696' value='{{valueName}}' name="peopleName" bindblur='userNameInput'/>
+                </view>
+            </view>
+            <view class='seleteDay'>
+                <view class='seleteDay_item'>联系电话</view>
+                <view class='pickerBox' style='justify-content:flex-start'>
+                    <input placeholder='联系人手机' placeholder-style='color:#969696' type='number' value='{{valuePhone}}' name="peoplePhone" bindblur='userPhoneInput'/>
+                </view>
+            </view>
+            <view class='titleBox'>
+                <view class='titleBox_line'></view>
+                <view>其他</view>
+            </view>
+            <view class="section" style='margin-top:0;background-color: #fafafa;'>
+                <textarea placeholder="备注说明" placeholder-style="color:#969696;font-size:28rpx;letter-spacing:5rpx;" maxlength='100' name="textarea" adjust-position @input = 'sectionValue'/>
+            </view>
+            <view class='maxInput'>{{leng}}/100</view>
+            <button formType="submit" class="preservation-btn {{btnUse?'btnUse':''}}" disabled="{{disabled}}" open-type='getUserInfo' @getuserinfo='getuserinfo'>
+                提交
+            </button>
+        </form>
+    </view>
+</template>
+
+<style lang="less">
+</style>

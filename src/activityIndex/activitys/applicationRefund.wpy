@@ -1,0 +1,103 @@
+<script>
+import wepy from 'wepy';
+import { orderRefuse } from '../../api/request';
+
+export default class applicationRefund extends wepy.page {
+    config = {
+        navigationBarTitleText: '申请退款',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        index: 0,
+        array: ['下错订单','价格太高','与所选商品不符','商品质量问题','其他'],
+        firstShow:true,
+        leng:0,
+        order_id:'',
+        open_id:''
+    };
+    methods = {
+        firstShow(){
+            this.firstShow = false
+        },
+        sectionValue(e){
+            let leng = e.detail.value.length
+            this.leng = leng
+        },
+    };
+    events = {};
+    onLoad(options) {
+        this.order_id = options.order_id
+        wx.getStorage({
+            key: 'openId&token',
+            success: (res)=>{
+                this.open_id = res.data.open_id
+                this.$apply()
+            }
+        })
+    };
+    
+    bindPickerChange(e){
+        this.index = e.detail.value
+    }
+    // 提交申请
+    formSubmit(e){
+        let formData = e.detail.value;
+        orderRefuse(this.order_id,this.open_id,this.array[formData.tuiKuan],formData.textarea).then((res)=>{
+            console.log(res.data.data)
+            if(res.data.status == 'fail'){
+                wx.showToast({
+                    title: res.data.message,
+                    icon: 'none'
+                })
+            }else if (res.data.status == 'undefined'){
+                wx.showToast({
+                    title: '接口错误',
+                    icon: 'none'
+                })
+            }
+            else{
+                wx.showToast({
+                    title: '提交成功',
+                    icon: 'success'
+                });
+                setTimeout(() => {
+                    wx.navigateBack({
+                        delta: 3
+                    });
+                }, 1100);
+            }
+        })
+    }
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <form bindsubmit="formSubmit">
+            <view class='seleteDay'>
+                <view class='seleteDay_item'>退款原因</view>
+                <view class='pickerBox'>
+                    <picker bindchange="bindPickerChange" value="{{index}}" range="{{array}}" name="tuiKuan">
+                        <view class="picker" wx:if='{{firstShow}}' @tap='firstShow' style='color:#ccc;'>选择退款原因</view><view wx:else class="picker">{{array[index]}}</view>
+                    </picker>
+                    <view>></view>
+                </view>
+            </view>
+            <!-- textarea -->
+            <view class="section" style='margin-top:0rpx;background-color:#fafafa;'>
+                <textarea placeholder="补充说明" name='textarea' placeholder-style="color:#ccc;font-size:24rpx;letter-spacing:5rpx;" maxlength='100' @input = 'sectionValue' />
+            </view>
+            <view class='maxInput' style='transform:translateY(-50rpx);font-size:24rpx;'>{{leng}}/100字</view>
+            <button class="preservation-btn btnUse"  formType="submit">
+                提交申请
+            </button>
+        </form>
+    </view>
+</template>
+
+<style lang="less">
+/** less **/
+</style>

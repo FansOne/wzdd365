@@ -1,0 +1,36 @@
+<template lang="wxml">
+    <view class='commentSpec'>
+        <block wx:for="{{syncStar}}" wx:key='idx' wx:for-item="items">
+            <image class="star-image" style="width:30rpx;height:30rpx;margin-right:3rpx;" src="{{starts> items || !starts ?'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F1.png' : 'https://wx-shopping-1257093177.cos.ap-beijing.myqcloud.com/%E6%98%9F%E6%98%9F.png'}}"/>
+        </block>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+export default class start extends wepy.component {
+    components = {};
+    methods = {};
+    data = {
+        starts:''
+    };
+    props = {
+        startNum: String,
+        syncStar: {
+            type: Array,
+            default: 'null'
+        }
+    };
+     events = {
+
+        'eventName': (e) => {
+                this.starts = e
+            }
+
+    }
+}
+</script>
+
+<style lang="less">
+/** less **/
+</style>

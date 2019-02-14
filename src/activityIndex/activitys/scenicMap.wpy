@@ -1,0 +1,54 @@
+<script>
+import wepy from 'wepy';
+import { mapDetail } from '../../api/request'
+
+export default class scenicMap extends wepy.page {
+    config = {
+        navigationBarTitleText: '华山景区导览图',
+        navigationBarTextStyle: '#ffffff',
+        navigationBarBackgroundColor: '#ff9e6e',
+    };
+    components = {};
+
+    data = {
+        imgUrl:[],
+    };
+    methods = {
+        previewImage(){
+            wx.previewImage({
+                urls: this.imgUrl
+            })
+        }
+    };
+
+    events = {};
+    onLoad(options) {
+        mapDetail(options.map_id).then((res)=>{
+            this.imgUrl.push(res.data.data.map_url)
+            this.$apply()
+            wx.setNavigationBarTitle({
+                title:res.data.data.title
+            })
+        })
+    };
+    // Other properties
+}
+</script>
+
+<template lang="wxml">
+    <view class='container'>
+        <image src='{{imgUrl[0]}}' @tap='previewImage'/>
+    </view>
+</template>
+
+<style lang="less">
+    image{
+        width: 680rpx;
+        height: 725rpx;
+        position: absolute;
+        left: 0;
+        right: 0;
+        margin: auto;
+        top: 20rpx;
+    }
+</style>
